@@ -1,67 +1,74 @@
-# DaySense Flow - AI-Powered Productivity App
+# DaySense Flow
 
-## About DaySense Flow
+**AI-Powered Energy-Aware Productivity App**
 
-## How can I edit this code?
+DaySense Flow is a productivity application that helps users plan and complete tasks based on their **current energy levels** rather than fixed schedules. It combines **energy tracking, task management, and AI-generated insights** to reduce burnout and improve focus.
 
-There are several ways of editing your application.
+---
 
-**About DaySense Flow**
+## Problem
 
-A sophisticated productivity application that leverages AI to help users optimize their energy levels and task management.
+Traditional productivity tools assume constant energy, leading to overload, burnout, and poor focus. They lack personalization and meaningful daily reflection.
 
-**Use your preferred IDE**
+---
 
-The application features:
+## Solution
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+DaySense Flow introduces an **energy-aware productivity system** where:
 
-Follow these steps:
+* Users track energy on a 1–5 scale
+* Tasks are planned based on energy cost
+* UI adapts to energy state
+* AI provides daily insights and reflections
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## MVP Features
 
-# Step 3: Install the necessary dependencies.
-npm i
+* **Energy Management:** 1–5 energy scale, Recharge / Flow / Focus states, Bio-Orb visualization
+* **Task Management:** Priority-based tasks with energy cost and completion tracking
+* **AI Insights:** AI coach, daily reflections, flow score analysis
+* **Analytics:** Energy trends and task completion insights
+* **Customization:** Light/Dark mode, themes, accessibility options
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+---
+
+## Architecture
+
+```
+React (Frontend)
+   ↓
+Context & State Management
+   ↓
+Firebase (Auth + Database)
+   ↓
+Gemini AI (Insights)
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Tech Stack
 
-**Use GitHub Codespaces**
+* React 18, TypeScript, Vite
+* Tailwind CSS, Radix UI, shadcn/ui, Framer Motion
+* Firebase
+* Google Gemini AI
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## Innovation
 
-This project is built with:
+* Productivity driven by **human energy**, not just tasks
+* Adaptive UI based on energy state
+* AI-powered behavioral insights
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+## Future Scope
 
-* AI-powered insights and task recommendations
-* Energy-based task matching
-* Comprehensive analytics dashboard
-* Secure Firebase authentication
-* Beautiful glassmorphism UI design
+* Predictive energy modeling
+* Mobile app version
+* Advanced AI planning features
 
+---
 
