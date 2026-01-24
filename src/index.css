@@ -1,0 +1,413 @@
+
+
+@layer base, components, utilities;
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Your custom styles below */
+
+/* DaySense AI - Chrono-Dynamic Minimalism Design System */
+
+@layer base {
+  :root {
+    /* Base tokens */
+    --background: 220 20% 97%;
+    --foreground: 220 20% 10%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 10%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 10%;
+    
+    --primary: 220 20% 15%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 220 15% 92%;
+    --secondary-foreground: 220 20% 15%;
+    
+    --muted: 220 15% 94%;
+    --muted-foreground: 220 10% 45%;
+    
+    --accent: 220 15% 90%;
+    --accent-foreground: 220 20% 15%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
+    --ring: 220 20% 15%;
+    
+    --radius: 1rem;
+    
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 20% 25%;
+    --sidebar-primary: 220 20% 15%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 96%;
+    --sidebar-accent-foreground: 220 20% 15%;
+    --sidebar-border: 220 15% 92%;
+    --sidebar-ring: 220 20% 15%;
+    
+    /* === ENERGY STATE TOKENS === */
+    
+    /* Recharge State (Energy 1-2) - Warm Amber/Sunset */
+    --recharge-primary: 38 92% 50%;
+    --recharge-secondary: 24 95% 53%;
+    --recharge-accent: 32 98% 83%;
+    --recharge-glow: 38 100% 60%;
+    --recharge-mesh-1: 38 92% 50%;
+    --recharge-mesh-2: 24 95% 53%;
+    --recharge-mesh-3: 45 93% 47%;
+    --recharge-surface: 40 30% 96%;
+    
+    /* Flow State (Energy 3) - Mint/Teal */
+    --flow-primary: 160 84% 39%;
+    --flow-secondary: 168 80% 43%;
+    --flow-accent: 166 72% 68%;
+    --flow-glow: 160 100% 50%;
+    --flow-mesh-1: 160 84% 39%;
+    --flow-mesh-2: 168 80% 43%;
+    --flow-mesh-3: 174 72% 56%;
+    --flow-surface: 160 30% 97%;
+    
+    /* Focus State (Energy 4-5) - Charcoal/Electric Violet */
+    --focus-primary: 258 90% 66%;
+    --focus-secondary: 220 20% 20%;
+    --focus-accent: 258 100% 75%;
+    --focus-glow: 258 100% 70%;
+    --focus-mesh-1: 258 90% 66%;
+    --focus-mesh-2: 220 30% 15%;
+    --focus-mesh-3: 280 70% 50%;
+    --focus-surface: 220 25% 8%;
+    
+    /* Glassmorphism */
+    --glass-bg: 0 0% 100% / 0.6;
+    --glass-border: 0 0% 100% / 0.3;
+    --glass-blur: 20px;
+    
+    /* Orb */
+    --orb-size: 200px;
+    --orb-pulse-duration: 3s;
+    
+    /* Default theme colors */
+    --theme-primary: 220 20% 15%;
+    --theme-primary-foreground: 0 0% 100%;
+    --theme-secondary: 220 15% 92%;
+    --theme-secondary-foreground: 220 20% 15%;
+  }
+  
+  /* Theme-based primary colors */
+  .theme-primary {
+    --primary: var(--theme-primary);
+    --primary-foreground: var(--theme-primary-foreground);
+  }
+  
+  .theme-secondary {
+    --secondary: var(--theme-secondary);
+    --secondary-foreground: var(--theme-secondary-foreground);
+  }
+  
+  .dark {
+    --theme-primary: 258 90% 66%;
+    --theme-primary-foreground: 0 0% 100%;
+    --theme-secondary: 258 50% 25%;
+    --theme-secondary-foreground: 258 100% 85%;
+  }
+  
+  .dark .theme-primary {
+    --primary: var(--theme-primary);
+    --primary-foreground: var(--theme-primary-foreground);
+  }
+  
+  .dark .theme-secondary {
+    --secondary: var(--theme-secondary);
+    --secondary-foreground: var(--theme-secondary-foreground);
+  }
+  
+  .dark,
+  [data-energy="focus"] {
+    --background: 220 25% 6%;
+    --foreground: 220 10% 95%;
+    
+    --card: 220 25% 10%;
+    --card-foreground: 220 10% 95%;
+    
+    --popover: 220 25% 10%;
+    --popover-foreground: 220 10% 95%;
+    
+    --primary: 258 90% 66%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 220 25% 15%;
+    --secondary-foreground: 220 10% 90%;
+    
+    --muted: 220 25% 18%;
+    --muted-foreground: 220 10% 55%;
+    
+    --accent: 258 50% 25%;
+    --accent-foreground: 258 100% 85%;
+    
+    --border: 220 20% 18%;
+    --input: 220 20% 18%;
+    --ring: 258 90% 66%;
+    
+    --glass-bg: 220 25% 10% / 0.7;
+    --glass-border: 258 50% 50% / 0.2;
+    
+    --sidebar-background: 220 25% 8%;
+    --sidebar-foreground: 220 10% 85%;
+    --sidebar-border: 220 20% 15%;
+  }
+  
+  /* High Contrast Mode */
+  .high-contrast {
+    --primary: 0 0% 0%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 100%;
+    --secondary-foreground: 0 0% 0%;
+    --border: 0 0% 0%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 0%;
+    --accent: 0 0% 0%;
+    --accent-foreground: 0 0% 100%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+  }
+  
+  .dark.high-contrast {
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 100%;
+    --border: 0 0% 100%;
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 100%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 100%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 100%;
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+  }
+  
+  [data-energy="recharge"] {
+    --primary: 38 92% 50%;
+    --primary-foreground: 38 30% 10%;
+    --accent: 32 98% 83%;
+    --accent-foreground: 38 80% 20%;
+    --ring: 38 92% 50%;
+    --glass-border: 38 80% 60% / 0.3;
+  }
+  
+  [data-energy="flow"] {
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 166 72% 68%;
+    --accent-foreground: 160 60% 15%;
+    --ring: 160 84% 39%;
+    --glass-border: 160 70% 50% / 0.3;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* Glassmorphic Surface */
+  .glass {
+    @apply backdrop-blur-xl border;
+    background: hsl(var(--glass-bg));
+    border-color: hsl(var(--glass-border));
+  }
+  
+  .glass-card {
+    @apply glass rounded-2xl p-6 shadow-lg;
+  }
+  
+  .glass-surface {
+    @apply glass rounded-3xl;
+  }
+  
+  /* Mesh Gradient Backgrounds */
+  .mesh-recharge {
+    background: 
+      radial-gradient(ellipse at 20% 30%, hsl(var(--recharge-mesh-1) / 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, hsl(var(--recharge-mesh-2) / 0.3) 0%, transparent 40%),
+      radial-gradient(ellipse at 60% 80%, hsl(var(--recharge-mesh-3) / 0.3) 0%, transparent 50%),
+      linear-gradient(135deg, hsl(var(--recharge-surface)) 0%, hsl(40 40% 94%) 100%);
+  }
+  
+  .mesh-flow {
+    background: 
+      radial-gradient(ellipse at 30% 20%, hsl(var(--flow-mesh-1) / 0.25) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 60%, hsl(var(--flow-mesh-2) / 0.2) 0%, transparent 45%),
+      radial-gradient(ellipse at 20% 80%, hsl(var(--flow-mesh-3) / 0.25) 0%, transparent 50%),
+      linear-gradient(160deg, hsl(var(--flow-surface)) 0%, hsl(165 25% 96%) 100%);
+  }
+  
+  .mesh-focus {
+    background: 
+      radial-gradient(ellipse at 10% 10%, hsl(var(--focus-mesh-1) / 0.25) 0%, transparent 40%),
+      radial-gradient(ellipse at 90% 30%, hsl(var(--focus-mesh-3) / 0.15) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 90%, hsl(var(--focus-mesh-1) / 0.1) 0%, transparent 50%),
+      linear-gradient(180deg, hsl(var(--focus-surface)) 0%, hsl(220 30% 5%) 100%);
+  }
+  
+  /* Bio-Orb Glow Effects */
+  .orb-glow-recharge {
+    box-shadow: 
+      0 0 60px 20px hsl(var(--recharge-glow) / 0.3),
+      0 0 120px 60px hsl(var(--recharge-glow) / 0.15),
+      inset 0 0 40px 10px hsl(var(--recharge-glow) / 0.2);
+  }
+  
+  .orb-glow-flow {
+    box-shadow: 
+      0 0 60px 20px hsl(var(--flow-glow) / 0.35),
+      0 0 120px 60px hsl(var(--flow-glow) / 0.15),
+      inset 0 0 40px 10px hsl(var(--flow-glow) / 0.25);
+  }
+  
+  .orb-glow-focus {
+    box-shadow: 
+      0 0 80px 30px hsl(var(--focus-glow) / 0.4),
+      0 0 150px 80px hsl(var(--focus-glow) / 0.15),
+      inset 0 0 50px 15px hsl(var(--focus-glow) / 0.3);
+  }
+  
+  /* AI-Driven Bio-Orb Glow Effects */
+  .orb-glow-green {
+    box-shadow: 
+      0 0 60px 20px rgba(16, 185, 129, 0.4),
+      0 0 120px 60px rgba(16, 185, 129, 0.2),
+      inset 0 0 40px 10px rgba(16, 185, 129, 0.3);
+  }
+  
+  .orb-glow-yellow {
+    box-shadow: 
+      0 0 60px 20px rgba(234, 179, 8, 0.4),
+      0 0 120px 60px rgba(234, 179, 8, 0.2),
+      inset 0 0 40px 10px rgba(234, 179, 8, 0.3);
+  }
+  
+  .orb-glow-red {
+    box-shadow: 
+      0 0 60px 20px rgba(239, 68, 68, 0.4),
+      0 0 120px 60px rgba(239, 68, 68, 0.2),
+      inset 0 0 40px 10px rgba(239, 68, 68, 0.3);
+  }
+  
+  /* AI-Driven Bio-Orb Glow Effects */
+  .orb-glow-green {
+    box-shadow: 
+      0 0 60px 20px rgba(16, 185, 129, 0.4),
+      0 0 120px 60px rgba(16, 185, 129, 0.2),
+      inset 0 0 40px 10px rgba(16, 185, 129, 0.3);
+  }
+  
+  .orb-glow-yellow {
+    box-shadow: 
+      0 0 60px 20px rgba(234, 179, 8, 0.4),
+      0 0 120px 60px rgba(234, 179, 8, 0.2),
+      inset 0 0 40px 10px rgba(234, 179, 8, 0.3);
+  }
+  
+  .orb-glow-red {
+    box-shadow: 
+      0 0 60px 20px rgba(239, 68, 68, 0.4),
+      0 0 120px 60px rgba(239, 68, 68, 0.2),
+      inset 0 0 40px 10px rgba(239, 68, 68, 0.3);
+  }
+  
+  /* Energy Badges */
+  .energy-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .energy-badge-low {
+    @apply bg-amber-100 text-amber-700 border border-amber-200;
+  }
+  
+  .energy-badge-medium {
+    @apply bg-teal-100 text-teal-700 border border-teal-200;
+  }
+  
+  .energy-badge-high {
+    @apply bg-violet-100 text-violet-700 border border-violet-200;
+  }
+  
+  /* Warning Glow for Low Energy Tasks */
+  .low-energy-warning {
+    @apply relative;
+    box-shadow: 
+      0 0 0 2px hsl(38 92% 50% / 0.3),
+      0 0 20px 0 hsl(38 92% 50% / 0.2);
+  }
+  
+  /* Haptic Button Animation */
+  .haptic {
+    @apply transition-transform duration-100;
+  }
+  
+  .haptic:active {
+    transform: scale(0.97);
+  }
+  
+  /* Typography */
+  .heading-display {
+    @apply text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight;
+  }
+  
+  .heading-hero {
+    @apply text-3xl md:text-5xl font-bold tracking-tight;
+  }
+  
+  .text-gradient-recharge {
+    @apply bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 bg-clip-text text-transparent;
+  }
+  
+  .text-gradient-flow {
+    @apply bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-600 bg-clip-text text-transparent;
+  }
+  
+  .text-gradient-focus {
+    @apply bg-gradient-to-r from-violet-500 via-purple-500 to-violet-600 bg-clip-text text-transparent;
+  }
+}
+
+@layer utilities {
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+  
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+  
+  .animation-delay-600 {
+    animation-delay: 600ms;
+  }
+}
