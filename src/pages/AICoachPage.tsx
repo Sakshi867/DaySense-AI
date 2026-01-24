@@ -519,29 +519,64 @@ const AICoachPage: React.FC = () => {
             transition={{ delay: 0.6 }}
           >
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <Lightbulb className="w-5 h-5" />
-              Recommended Tasks with Explanations
+              <Lightbulb className="w-5 h-5 text-amber-500" />
+              Why These Tasks Now? (Explainable AI)
             </h2>
             
             {recommendedTasksWithExplanations.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {recommendedTasksWithExplanations.map((task, index) => (
-                  <GlassCard key={task.id || index} className="p-5">
+                  <GlassCard key={task.id || index} className="p-5 hover:shadow-lg transition-shadow duration-200 border border-white/10">
                     <div className="flex items-start justify-between mb-3">
-                      <h3 className="font-semibold text-foreground">{task.title}</h3>
-                      <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary">
-                        Energy {task.energy_cost || 'N/A'}
-                      </span>
+                      <h3 className="font-semibold text-foreground text-lg">{task.title}</h3>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">
+                          Energy {task.energy_cost || 'N/A'}
+                        </span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                          {task.confidence ? `${Math.round(task.confidence * 100)}%` : 'N/A'}
+                        </span>
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-3">{task.explanation}</p>
+                    
+                    {/* Enhanced Explanation Section */}
+                    <div className="mb-4 p-3 bg-black/20 rounded-lg border border-white/5">
+                      <div className="flex items-start gap-2">
+                        <div className="mt-0.5 w-2 h-2 rounded-full bg-amber-400 flex-shrink-0"></div>
+                        <div>
+                          <p className="text-sm text-gray-200 leading-relaxed">
+                            {task.explanation}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Factors Breakdown */}
+                    {task.factors && task.factors.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {task.factors.map((factor: string, idx: number) => (
+                          <span 
+                            key={idx} 
+                            className="text-xs px-2 py-1 rounded-full bg-white/5 text-gray-400 border border-white/10"
+                          >
+                            {factor.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    
                     <div className="flex items-center justify-between pt-3 border-t border-border/30">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Zap className="w-3 h-3" />
-                        <span>Requires {task.energy_cost || 'N/A'}/5 energy</span>
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>{task.estimated_minutes || 'N/A'} min</span>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        Confidence: {task.confidence ? `${Math.round(task.confidence * 100)}%` : 'N/A'}
-                      </div>
+                      <Button 
+                        size="sm" 
+                        className="text-xs bg-violet-600 hover:bg-violet-500"
+                        onClick={() => console.log('Starting task:', task.title)}
+                      >
+                        Start Now
+                      </Button>
                     </div>
                   </GlassCard>
                 ))}

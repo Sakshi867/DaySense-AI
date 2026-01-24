@@ -274,15 +274,7 @@ const TasksPage: React.FC = () => {
       <Dialog open={isCreatingTask} onOpenChange={setIsCreatingTask}>
         <DialogContent className="max-w-md rounded-2xl glass-card border-white/20 bg-black/40 backdrop-blur-xl text-white">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>Create New Task</span>
-              <button 
-                onClick={() => setIsCreatingTask(false)}
-                className="p-1 rounded-full hover:bg-white/10 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </DialogTitle>
+            <DialogTitle>Create New Task</DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4 py-2">
