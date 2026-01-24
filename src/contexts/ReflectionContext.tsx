@@ -2,13 +2,17 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { useEnergy } from '@/contexts/EnergyContext';
 import { useTasks } from '@/contexts/TaskContext';
 import { useDailyTracking } from '@/hooks/useDailyTracking';
-import { useFlowScore } from '@/contexts/FlowScoreContext';
+import { FlowScoreContext } from '@/contexts/FlowScoreContext';
 import { geminiService } from '@/services/geminiService';
 
 interface DailyReflection {
   date: string;
   dailySummary: string;
   reflectiveQuestion: string;
+  fullReflection?: string;
+  energyDrains?: string;
+  energyBoosts?: string;
+  tomorrowFocus?: string;
   flowScore?: number;
   energyInsights?: {
     avg: string;
@@ -40,7 +44,10 @@ export const ReflectionProvider: React.FC<{ children: ReactNode }> = ({ children
   const { energyLevel } = useEnergy();
   const { tasks } = useTasks();
   const { trackingData } = useDailyTracking();
-  const { flowScore } = useFlowScore();
+  
+  // Defer flowScore access to when it's actually needed
+  const flowScoreContext = useContext(FlowScoreContext);
+  const flowScore = flowScoreContext?.flowScore || { currentScore: null };
   
   const [reflections, setReflections] = useState<DailyReflection[]>([]);
   const [currentReflection, setCurrentReflection] = useState<DailyReflection | null>(null);
@@ -91,8 +98,12 @@ export const ReflectionProvider: React.FC<{ children: ReactNode }> = ({ children
       
       const newReflection: DailyReflection = {
         date: today,
-        dailySummary: reflectionData.dailySummary,
+        dailySummary: reflectionData.fullReflection || 'Reflection generated',
         reflectiveQuestion: reflectionData.reflectiveQuestion,
+        fullReflection: reflectionData.fullReflection,
+        energyDrains: reflectionData.energyDrains,
+        energyBoosts: reflectionData.energyBoosts,
+        tomorrowFocus: reflectionData.tomorrowFocus,
         flowScore: flowScore.currentScore || undefined,
         energyInsights,
         taskStats

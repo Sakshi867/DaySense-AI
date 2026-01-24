@@ -28,6 +28,8 @@ interface FlowScoreContextType {
 
 const FlowScoreContext = createContext<FlowScoreContextType | undefined>(undefined);
 
+export { FlowScoreContext };
+
 export const FlowScoreProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { energyLevel } = useEnergy();
   const { tasks } = useTasks();

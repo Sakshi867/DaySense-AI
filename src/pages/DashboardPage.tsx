@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTasks } from '@/contexts/TaskContext';
 import { useFlowScore } from '@/contexts/FlowScoreContext';
 import { useReflections } from '@/contexts/ReflectionContext';
-import { tasksService } from '@/services/firebaseService';
+import runModelTest from '@/utils/test-models';
 import { UserTask as Task } from '@/services/firebaseService';
 import DashboardSidebar from '@/components/layout/DashboardSidebar';
 import MeshBackground from '@/components/layout/MeshBackground';
@@ -127,14 +127,32 @@ const DashboardPage: React.FC = () => {
               </div>
               
               {/* Manual trigger for end-of-day reflection */}
-              <Button 
-                variant="outline" 
-                className="flex items-center gap-2"
-                onClick={() => setShowEndOfDayReflection(true)}
-              >
-                <Brain className="w-4 h-4" />
-                Daily Reflection
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2"
+                  onClick={() => setShowEndOfDayReflection(true)}
+                >
+                  <Brain className="w-4 h-4" />
+                  Daily Reflection
+                </Button>
+                
+                {/* Model Test Button - for debugging */}
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2 bg-yellow-500/10 border-yellow-500/20 hover:bg-yellow-500/20"
+                  onClick={async () => {
+                    try {
+                      await runModelTest();
+                    } catch (error) {
+                      console.error('Model test failed:', error);
+                    }
+                  }}
+                >
+                  <span className="text-yellow-500">🔍</span>
+                  Test Models
+                </Button>
+              </div>
               
               {/* Quick Stats */}
               <div className="flex items-center gap-4">

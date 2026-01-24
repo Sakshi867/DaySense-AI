@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, TrendingUp, Target, Calendar, Lightbulb } from 'lucide-react';
+import { Brain, TrendingUp, Target, Calendar, Lightbulb, Moon, Sun, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import GlassCard from '@/components/GlassCard';
 import { useDailyTracking } from '@/hooks/useDailyTracking';
 import { geminiService } from '@/services/geminiService';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEnergy } from '@/contexts/EnergyContext';
 
 interface EndOfDayReflectionProps {
   isOpen: boolean;
@@ -22,10 +23,17 @@ const EndOfDayReflection: React.FC<EndOfDayReflectionProps> = ({
   // FIX: Destructure from the hook correctly
   const { trackingData, resetDailyTracking } = useDailyTracking();
   const { user } = useAuth();
+  const { northStar } = useEnergy();
+  
   const [reflection, setReflection] = useState<{
+    fullReflection: string;
     dailySummary: string;
+    energyDrains: string;
+    energyBoosts: string;
     reflectiveQuestion: string;
+    tomorrowFocus: string;
   } | null>(null);
+  
   const [flowScoreInsight, setFlowScoreInsight] = useState<{scoreExplanation: string} | null>(null);
   const [loading, setLoading] = useState(false);
   const [showReflection, setShowReflection] = useState(false);
@@ -42,7 +50,8 @@ const EndOfDayReflection: React.FC<EndOfDayReflectionProps> = ({
             trackingData.completedTasks,
             trackingData.pendingTasks,
             trackingData.passiveSignals,
-            trackingData.flowScore || 0
+            trackingData.flowScore || 0,
+            northStar
           );
           
           setReflection(reflectionData);
@@ -62,9 +71,16 @@ const EndOfDayReflection: React.FC<EndOfDayReflectionProps> = ({
           setShowReflection(true);
         } catch (error) {
           console.error('Error generating reflection:', error);
+          const completionRate = trackingData.completedTasks.length + trackingData.pendingTasks.length > 0 
+            ? Math.round((trackingData.completedTasks.length / (trackingData.completedTasks.length + trackingData.pendingTasks.length)) * 100)
+            : 0;
           setReflection({
-            dailySummary: `Great job today! You completed ${trackingData.completedTasks.length} tasks and maintained a Flow Score of ${trackingData.flowScore || 0}%.`,
-            reflectiveQuestion: `Looking at your patterns, what's one thing you'd change about your routine tomorrow?`
+            fullReflection: `Great job today! You completed ${trackingData.completedTasks.length} tasks with a ${completionRate}% completion rate. Your Flow Score of ${trackingData.flowScore || 0}% shows solid progress. I noticed you were most productive during your peak energy hours. What's one routine adjustment you could make tomorrow to maintain this momentum? Consider protecting your high-energy time blocks for your most important work.`,
+            dailySummary: `Great job today! You completed ${trackingData.completedTasks.length} tasks with a ${completionRate}% completion rate. Your Flow Score of ${trackingData.flowScore || 0}% shows solid progress.`,
+            energyDrains: 'Evening hours showed decreased energy levels',
+            energyBoosts: 'Morning/afternoon hours aligned well with task demands',
+            reflectiveQuestion: 'What one boundary could you set tomorrow to preserve your peak energy hours?',
+            tomorrowFocus: 'Protect high-energy time blocks for priority tasks'
           });
           
           // Set fallback flow score insight
@@ -111,8 +127,8 @@ const EndOfDayReflection: React.FC<EndOfDayReflectionProps> = ({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto glass-card border-white/20 bg-black/40 backdrop-blur-xl text-white">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl font-bold">
-            <Brain className="w-6 h-6 text-violet-400" />
-            End-of-Day Reflection
+            <Moon className="w-6 h-6 text-indigo-400" />
+            End-of-Day Cognitive Reflection
           </DialogTitle>
         </DialogHeader>
 
@@ -135,92 +151,159 @@ const EndOfDayReflection: React.FC<EndOfDayReflectionProps> = ({
               animate={{ opacity: 1, y: 0 }}
               className="space-y-6"
             >
-              <GlassCard className="p-6 bg-white/5 border-white/10">
-                <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp className="w-5 h-5 text-violet-400" />
-                  <h3 className="text-xl font-bold">The Day in Review</h3>
-                </div>
-                <p className="text-gray-300 leading-relaxed mb-6">
-                  {reflection.dailySummary}
-                </p>
-                
-                {energyInsight && (
-                  <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/10">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-violet-400">{energyInsight.avg}</div>
-                      <div className="text-xs text-gray-500 uppercase tracking-wider">Avg Energy</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-emerald-400">{energyInsight.peak}</div>
-                      <div className="text-xs text-gray-500 uppercase tracking-wider">Peak Flow</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-amber-400">{energyInsight.low}</div>
-                      <div className="text-xs text-gray-500 uppercase tracking-wider">Lowest Dip</div>
-                    </div>
+              {/* Coach Introduction */}
+              <GlassCard className="p-6 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-indigo-500/20">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-full bg-indigo-500/20">
+                    <Brain className="w-5 h-5 text-indigo-400" />
                   </div>
-                )}
-              </GlassCard>
-
-              <GlassCard className="p-6 bg-violet-500/10 border-violet-500/20">
-                <div className="flex items-center gap-2 mb-4">
-                  <Lightbulb className="w-5 h-5 text-violet-400" />
-                  <h3 className="text-xl font-bold">AI Insight</h3>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">Your DaySense Coach Says</h3>
+                    <p className="text-sm text-gray-400">Closing the cognitive loop for tomorrow's success</p>
+                  </div>
                 </div>
-                <div className="bg-black/20 rounded-xl p-4 mb-4 border border-white/5">
-                  <p className="text-white font-medium italic">
-                    "{reflection.reflectiveQuestion}"
+                
+                <div className="prose prose-invert max-w-none">
+                  <p className="text-gray-200 leading-relaxed whitespace-pre-line">
+                    {reflection.fullReflection}
                   </p>
                 </div>
+              </GlassCard>
+
+              {/* Energy Pattern Analysis */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <GlassCard className="p-4 text-center bg-white/5 border-white/10">
+                  <Sun className="w-6 h-6 text-amber-400 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-amber-400">{energyInsight?.peak || 3}</div>
+                  <div className="text-xs text-gray-400 uppercase tracking-wider">Peak Energy</div>
+                  <div className="text-xs text-amber-300 mt-1">Best performance hours</div>
+                </GlassCard>
+                
+                <GlassCard className="p-4 text-center bg-white/5 border-white/10">
+                  <Zap className="w-6 h-6 text-violet-400 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-violet-400">{energyInsight?.avg || 3}</div>
+                  <div className="text-xs text-gray-400 uppercase tracking-wider">Avg Energy</div>
+                  <div className="text-xs text-violet-300 mt-1">Overall daily level</div>
+                </GlassCard>
+                
+                <GlassCard className="p-4 text-center bg-white/5 border-white/10">
+                  <Moon className="w-6 h-6 text-slate-400 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-slate-400">{energyInsight?.low || 3}</div>
+                  <div className="text-xs text-gray-400 uppercase tracking-wider">Energy Dip</div>
+                  <div className="text-xs text-slate-300 mt-1">Restoration needed</div>
+                </GlassCard>
+              </div>
+
+              {/* Detailed Insights */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Energy Drains */}
+                <GlassCard className="p-5 bg-rose-500/10 border-rose-500/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-rose-500"></div>
+                    <h4 className="font-semibold text-rose-400">Energy Drains</h4>
+                  </div>
+                  <p className="text-gray-300 text-sm">
+                    {reflection.energyDrains || 'Identifying patterns that depleted your energy...'}
+                  </p>
+                </GlassCard>
+
+                {/* Energy Boosts */}
+                <GlassCard className="p-5 bg-emerald-500/10 border-emerald-500/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <h4 className="font-semibold text-emerald-400">Energy Boosts</h4>
+                  </div>
+                  <p className="text-gray-300 text-sm">
+                    {reflection.energyBoosts || 'Recognizing what fueled your productivity...'}
+                  </p>
+                </GlassCard>
+              </div>
+
+              {/* Reflective Question */}
+              <GlassCard className="p-6 bg-gradient-to-r from-violet-500/10 to-indigo-500/10 border-violet-500/20">
+                <div className="flex items-center gap-2 mb-4">
+                  <Lightbulb className="w-5 h-5 text-violet-400" />
+                  <h3 className="text-xl font-bold text-white">Tonight's Reflection</h3>
+                </div>
+                
+                <div className="bg-black/30 rounded-xl p-5 mb-4 border border-white/10">
+                  <p className="text-white font-medium text-lg italic leading-relaxed">
+                    "{reflection.reflectiveQuestion || 'What one small change could transform your tomorrow?'}"
+                  </p>
+                </div>
+                
                 <p className="text-sm text-gray-400">
-                  Focusing on this answer helps calibrate your Bio-Orb for a better start tomorrow.
+                  This question helps calibrate your cognitive patterns for better energy management tomorrow.
                 </p>
               </GlassCard>
 
+              {/* Tomorrow's Focus */}
+              <GlassCard className="p-6 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/20">
+                <div className="flex items-center gap-2 mb-4">
+                  <Target className="w-5 h-5 text-amber-400" />
+                  <h3 className="text-xl font-bold text-white">Tomorrow's North Star</h3>
+                </div>
+                
+                <div className="bg-black/30 rounded-xl p-4 mb-4 border border-white/10">
+                  <p className="text-amber-100 font-medium">
+                    {reflection.tomorrowFocus || 'Focus on protecting your peak energy hours for priority work.'}
+                  </p>
+                </div>
+                
+                <div className="flex items-center justify-between text-sm text-gray-400">
+                  <span>Your North Star: {northStar || 'Not set'}</span>
+                  <span>Flow Score: {trackingData.flowScore || 0}%</span>
+                </div>
+              </GlassCard>
+
+              {/* Completion Stats */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-center">
                   <Calendar className="w-5 h-5 text-emerald-400 mx-auto mb-2" />
                   <div className="text-2xl font-bold text-emerald-400">
                     {trackingData.completedTasks.length}
                   </div>
-                  <div className="text-xs text-gray-500">Completed</div>
+                  <div className="text-xs text-gray-500">Tasks Completed</div>
                 </div>
                 <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-center">
-                  <Target className="w-5 h-5 text-violet-400 mx-auto mb-2" />
+                  <TrendingUp className="w-5 h-5 text-violet-400 mx-auto mb-2" />
                   <div className="text-2xl font-bold text-violet-400">
                     {trackingData.flowScore || 0}%
                   </div>
                   <div className="text-xs text-gray-500">Flow Score™</div>
                 </div>
               </div>
-              
-              {/* Flow Score Explanation */}
-              {flowScoreInsight && (
-                <GlassCard className="p-4 bg-gradient-to-r from-violet-500/10 to-blue-500/10 border-violet-500/20">
-                  <div className="flex items-start gap-2">
-                    <div className="mt-0.5 w-2 h-2 rounded-full bg-violet-400 flex-shrink-0"></div>
-                    <p className="text-sm text-gray-300">
-                      {flowScoreInsight.scoreExplanation}
-                    </p>
-                  </div>
-                </GlassCard>
-              )}
-
+              {/* Action Buttons */}
               <div className="flex gap-3 pt-4">
-                <Button variant="outline" className="flex-1 bg-transparent border-white/10 text-white hover:bg-white/5" onClick={onClose}>
-                  Review Later
+                <Button 
+                  variant="outline" 
+                  className="flex-1 bg-transparent border-white/10 text-white hover:bg-white/5" 
+                  onClick={onClose}
+                >
+                  Reflect Later
                 </Button>
-                <Button className="flex-1 bg-violet-600 hover:bg-violet-500 text-white" onClick={handleComplete}>
+                <Button 
+                  className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg" 
+                  onClick={handleComplete}
+                >
+                  <Moon className="w-4 h-4 mr-2" />
                   Complete Reflection
                 </Button>
               </div>
             </motion.div>
           ) : (
             <div className="text-center py-12">
-              <Brain className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Not Enough Data</h3>
-              <p className="text-gray-400 mb-6">Complete at least one task today to unlock your daily reflection summary.</p>
-              <Button onClick={onClose} className="bg-white/10 hover:bg-white/20 text-white border border-white/10">Back to Dashboard</Button>
+              <div className="p-4 rounded-full bg-indigo-500/10 w-fit mx-auto mb-4">
+                <Moon className="w-12 h-12 text-indigo-400" />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-white">Ready for Reflection?</h3>
+              <p className="text-gray-400 mb-6 max-w-md mx-auto">Complete at least one task today to unlock your personalized end-of-day cognitive reflection and prepare for tomorrow's success.</p>
+              <Button 
+                onClick={onClose} 
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white px-6 py-2"
+              >
+                Back to Dashboard
+              </Button>
             </div>
           )}
         </AnimatePresence>
