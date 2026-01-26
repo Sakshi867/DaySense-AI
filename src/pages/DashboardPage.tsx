@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Target, TrendingUp, Clock, CheckCircle2, Brain } from 'lucide-react';
 import { useEnergy } from '@/contexts/EnergyContext';
@@ -27,14 +27,24 @@ const DashboardPage: React.FC = () => {
   const [showEndOfDayReflection, setShowEndOfDayReflection] = useState(false);
   const [reflectionCompleted, setReflectionCompleted] = useState(false);
 
+  // Track if user dismissed reflection today to prevent spamming on refresh
+  const [hasDismissedReflection, setHasDismissedReflection] = useState(() => {
+    try {
+      const today = new Date().toDateString();
+      return sessionStorage.getItem(`reflection_dismissed_${today}`) === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+
   // Trigger end-of-day reflection automatically
   useEffect(() => {
     const checkEndOfDay = () => {
       const now = new Date();
       const hour = now.getHours();
 
-      // Show reflection between 9 PM and 10 PM if not already shown today
-      if (hour >= 21 && hour < 22 && !reflectionCompleted) {
+      // Show reflection between 9 PM and 10 PM if not already shown today or dismissed
+      if (hour >= 21 && hour < 22 && !reflectionCompleted && !hasDismissedReflection) {
         setShowEndOfDayReflection(true);
       }
     };
@@ -46,13 +56,24 @@ const DashboardPage: React.FC = () => {
     const interval = setInterval(checkEndOfDay, 60000);
 
     return () => clearInterval(interval);
-  }, [reflectionCompleted]);
+  }, [reflectionCompleted, hasDismissedReflection]);
+
+  const handleCloseReflection = () => {
+    setShowEndOfDayReflection(false);
+    try {
+      const today = new Date().toDateString();
+      sessionStorage.setItem(`reflection_dismissed_${today}`, 'true');
+      setHasDismissedReflection(true);
+    } catch (e) {
+      console.warn("Could not save dismissal state", e);
+    }
+  };
 
   const completedTasksCount = getCompletedTasks().length;
   const pendingTasks = getPendingTasks();
   const optimalTasks = getOptimalTasks(energyLevel);
 
-  const stats = [
+  const stats = useMemo(() => [
     {
       icon: CheckCircle2,
       label: 'Completed',
@@ -80,7 +101,7 @@ const DashboardPage: React.FC = () => {
       value: `${pendingTasks.reduce((acc, t) => acc + t.estimated_minutes, 0)}m`,
       color: 'text-amber-500',
     },
-  ];
+  ], [completedTasksCount, tasks.length, user?.streak_days, flowScore.currentScore, pendingTasks]);
 
   const getTimeOfDay = () => {
     const hour = new Date().getHours();
@@ -102,7 +123,7 @@ const DashboardPage: React.FC = () => {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1">
-                Good {getTimeOfDay()}, {user?.full_name?.split(' ')?.[0] || 'there'}
+                Good {getTimeOfDay()}, {user?.full_name || user?.email?.split('@')[0] || 'User'}
               </h1>
               {northStar && (
                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -263,7 +284,7 @@ const DashboardPage: React.FC = () => {
 
       <EndOfDayReflection
         isOpen={showEndOfDayReflection}
-        onClose={() => setShowEndOfDayReflection(false)}
+        onClose={handleCloseReflection}
         onComplete={() => setReflectionCompleted(true)}
       />
     </DashboardLayout>

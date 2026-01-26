@@ -1,20 +1,22 @@
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut, 
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
   onAuthStateChanged,
+  setPersistence,
+  browserSessionPersistence,
   User as FirebaseUser
 } from 'firebase/auth';
-import { 
-  doc, 
-  setDoc, 
-  getDoc, 
-  collection, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
+import {
+  doc,
+  setDoc,
+  getDoc,
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
   getDocs,
   Timestamp,
   serverTimestamp
@@ -44,6 +46,7 @@ export interface UserProfile {
   high_contrast_enabled?: boolean;
   large_text_enabled?: boolean;
   theme_color?: string;
+  chronotype?: 'morning' | 'afternoon' | 'evening';
 }
 
 export interface UserTask {
@@ -77,9 +80,10 @@ export interface UserAnalytics {
 export const authService = {
   // Sign up
   signUp: async (email: string, password: string, fullName: string) => {
+    await setPersistence(auth, browserSessionPersistence);
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
-    
+
     // Create initial user profile with onboarding_completed: false
     await profileService.createProfile(user.uid, {
       email: user.email,
@@ -98,12 +102,13 @@ export const authService = {
       large_text_enabled: false,
       theme_color: 'Default'
     });
-    
+
     return user;
   },
 
   // Sign in
   signIn: async (email: string, password: string) => {
+    await setPersistence(auth, browserSessionPersistence);
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential.user;
   },
@@ -139,7 +144,7 @@ export const profileService = {
       created_at: serverTimestamp(), // Best practice: use server time
       onboarding_completed: profileData.onboarding_completed ?? false
     };
-    
+
     // Use setDoc with merge: true so we don't accidentally wipe existing data
     await setDoc(profileRef, profile, { merge: true });
     return profile;
@@ -148,7 +153,7 @@ export const profileService = {
   getProfile: async (userId: string) => {
     const profileRef = doc(db, 'profiles', userId);
     const profileSnap = await getDoc(profileRef);
-    
+
     if (profileSnap.exists()) {
       return { id: profileSnap.id, ...profileSnap.data() } as UserProfile;
     }
@@ -173,7 +178,7 @@ export const tasksService = {
       created_at: serverTimestamp(),
       updated_at: serverTimestamp()
     };
-    
+
     const docRef = await addDoc(taskRef, newTask);
     return { id: docRef.id, ...newTask } as UserTask;
   },
@@ -182,7 +187,7 @@ export const tasksService = {
     const tasksRef = collection(db, 'tasks');
     const q = query(tasksRef, where('user_id', '==', userId));
     const querySnapshot = await getDocs(q);
-    
+
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
@@ -207,13 +212,13 @@ export const analyticsService = {
   upsertDailyAnalytics: async (userId: string, analyticsData: Omit<UserAnalytics, 'id' | 'user_id' | 'created_at'>) => {
     const analyticsRef = collection(db, 'analytics');
     const q = query(
-      analyticsRef, 
+      analyticsRef,
       where('user_id', '==', userId),
       where('date', '==', analyticsData.date)
     );
-    
+
     const querySnapshot = await getDocs(q);
-    
+
     if (!querySnapshot.empty) {
       const docRef = querySnapshot.docs[0].ref;
       await updateDoc(docRef, { ...analyticsData, updated_at: serverTimestamp() });
@@ -232,7 +237,7 @@ export const analyticsService = {
   getUserAnalytics: async (userId: string) => {
     const q = query(collection(db, 'analytics'), where('user_id', '==', userId));
     const querySnapshot = await getDocs(q);
-    
+
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()

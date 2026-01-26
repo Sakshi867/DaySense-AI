@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { toast } from "sonner";
 import { Settings, User, Bell, Palette, Lock, HelpCircle, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -26,6 +27,7 @@ const SettingsPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [bio, setBio] = useState('');
   const [selectedTheme, setSelectedTheme] = useState('Default');
+  const [isSaving, setIsSaving] = useState(false);
 
   const [activeTab, setActiveTab] = useState('profile');
 
@@ -48,6 +50,9 @@ const SettingsPage: React.FC = () => {
   }, [user]);
 
   const handleSaveChanges = async () => {
+    if (!user) return;
+
+    setIsSaving(true);
     try {
       if (user) {
         const profileData = {
@@ -68,11 +73,13 @@ const SettingsPage: React.FC = () => {
 
         await updateUser(profileData);
         applyThemeChanges(darkMode, highContrast, largeText, selectedTheme);
-        alert('Settings saved successfully!');
+        toast.success('Settings saved successfully!');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert('Failed to save settings.');
+      toast.error('Failed to save settings.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -252,8 +259,12 @@ const SettingsPage: React.FC = () => {
                     </div>
 
                     <div className="mt-10 flex flex-col sm:flex-row justify-end gap-3">
-                      <Button onClick={handleSaveChanges} className="h-12 rounded-xl px-8 shadow-lg shadow-primary/20">
-                        Update Profile
+                      <Button
+                        onClick={handleSaveChanges}
+                        className="h-12 rounded-xl px-8 shadow-lg shadow-primary/20"
+                        disabled={isSaving}
+                      >
+                        {isSaving ? 'Saving...' : 'Update Profile'}
                       </Button>
                     </div>
                   </GlassCard>
@@ -295,7 +306,9 @@ const SettingsPage: React.FC = () => {
                       ))}
                     </div>
                     <div className="mt-8 flex justify-end">
-                      <Button onClick={handleSaveChanges} className="h-11 rounded-xl px-6 bg-primary/80 hover:bg-primary">Save Alerts</Button>
+                      <Button onClick={handleSaveChanges} className="h-11 rounded-xl px-6 bg-primary/80 hover:bg-primary" disabled={isSaving}>
+                        {isSaving ? 'Saving...' : 'Save Alerts'}
+                      </Button>
                     </div>
                   </GlassCard>
                 </motion.div>
@@ -361,7 +374,9 @@ const SettingsPage: React.FC = () => {
                       </div>
                     </div>
                     <div className="mt-10 flex justify-end">
-                      <Button onClick={handleSaveChanges} className="h-11 rounded-xl px-6 bg-primary/80 hover:bg-primary">Apply Theme</Button>
+                      <Button onClick={handleSaveChanges} className="h-11 rounded-xl px-6 bg-primary/80 hover:bg-primary" disabled={isSaving}>
+                        {isSaving ? 'Applying...' : 'Apply Theme'}
+                      </Button>
                     </div>
                   </GlassCard>
                 </motion.div>
@@ -404,7 +419,9 @@ const SettingsPage: React.FC = () => {
                       ))}
                     </div>
                     <div className="mt-8 flex justify-end">
-                      <Button onClick={handleSaveChanges} className="h-11 rounded-xl px-6 bg-primary/80 hover:bg-primary">Sync Settings</Button>
+                      <Button onClick={handleSaveChanges} className="h-11 rounded-xl px-6 bg-primary/80 hover:bg-primary" disabled={isSaving}>
+                        {isSaving ? 'Syncing...' : 'Sync Settings'}
+                      </Button>
                     </div>
                   </GlassCard>
                 </motion.div>

@@ -36,29 +36,31 @@ const TasksPage: React.FC = () => {
 
   // Handle new task creation
   const handleCreateTask = async () => {
-    if (!user || !newTask.title.trim() || isCreating) return;
+    if (!user || !newTask.title.trim()) return;
 
-    setIsCreating(true);
+    // Optimistic: Close modal immediately
+    setIsCreatingTask(false);
+
+    // Reset form immediately
+    const taskToSubmit = { ...newTask };
+    setNewTask({
+      title: '',
+      description: null as string | null,
+      energy_cost: 3,
+      estimated_minutes: 30,
+      priority: 'medium' as 'low' | 'medium' | 'high',
+      category: 'admin' as string | null
+    });
 
     try {
       await addTask({
-        ...newTask,
+        ...taskToSubmit,
         completed: false
       });
-
-      setNewTask({
-        title: '',
-        description: null as string | null,
-        energy_cost: 3,
-        estimated_minutes: 30,
-        priority: 'medium' as 'low' | 'medium' | 'high',
-        category: 'admin' as string | null
-      });
-      setIsCreatingTask(false);
     } catch (error) {
       console.error('Error creating task:', error);
-    } finally {
-      setIsCreating(false);
+      // Ideally show a toast here, but for now we rely on the context's error state or console
+      // Re-opening modal with data would be complex without extra state
     }
   };
 

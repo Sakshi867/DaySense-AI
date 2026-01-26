@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Sparkles, MessageCircle, Lightbulb, Brain, Clock, Target, Zap, Coffee } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles, MessageCircle, Lightbulb, Brain, Clock, Target, Zap, Coffee, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from "sonner";
 import { Textarea } from '@/components/ui/textarea';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import GlassCard from '@/components/GlassCard';
@@ -17,6 +18,7 @@ const AICoachPage: React.FC = () => {
   const { energyLevel, energyState, northStar } = useEnergy();
   const { user } = useAuth();
   const { tasks } = useTasks();
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const [chatMessages, setChatMessages] = useState([
     {
@@ -28,23 +30,35 @@ const AICoachPage: React.FC = () => {
   ]);
   const [inputText, setInputText] = useState('');
   const [recommendedTasksWithExplanations, setRecommendedTasksWithExplanations] = useState<any[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
 
   // State for break request functionality
   const [breakRequested, setBreakRequested] = useState(false);
   const [breakRequestMessage, setBreakRequestMessage] = useState('');
 
+  // Scroll to bottom on new message
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [chatMessages, isTyping]);
+
   // Function to handle break request
   const handleBreakRequest = async () => {
+    if (isTyping) return;
     try {
       // Add a message to the chat indicating the break request
       const userMessage = {
-        id: chatMessages.length + 1,
+        id: Date.now(),
         text: "I need a break. Suggest a good break activity based on my current energy level and cognitive state.",
         sender: 'user',
         timestamp: new Date()
       };
 
       setChatMessages(prev => [...prev, userMessage]);
+      setIsTyping(true);
+      setBreakRequested(true);
+      setBreakRequestMessage("Consulting AI Coach...");
 
       // Generate AI response for break suggestion
       const breakPrompt = `
@@ -65,15 +79,13 @@ const AICoachPage: React.FC = () => {
       );
 
       const aiResponse = {
-        id: chatMessages.length + 2,
+        id: Date.now() + 1,
         text: aiInsight.insight,
         sender: 'ai',
         timestamp: new Date()
       };
 
       setChatMessages(prev => [...prev, aiResponse]);
-
-      setBreakRequested(true);
       setBreakRequestMessage("Break requested. AI coach has provided suggestions in the chat.");
 
       // Reset the break request status after a while
@@ -85,13 +97,17 @@ const AICoachPage: React.FC = () => {
       console.error('Error requesting break:', error);
 
       const errorMessage = {
-        id: chatMessages.length + 1,
+        id: Date.now() + 1,
         text: "Sorry, I couldn't process your break request right now. Please try again later.",
         sender: 'ai',
         timestamp: new Date()
       };
 
       setChatMessages(prev => [...prev, errorMessage]);
+      setBreakRequested(false);
+      setBreakRequestMessage('');
+    } finally {
+      setIsTyping(false);
     }
   };
 
@@ -130,6 +146,7 @@ const AICoachPage: React.FC = () => {
   }, [user, energyLevel, tasks.length]);
 
   const handleQuickAction = async (actionType: string) => {
+    if (isTyping) return;
     try {
       let prompt = "";
 
@@ -168,19 +185,20 @@ const AICoachPage: React.FC = () => {
 
       // Add the prompt to chat as user message
       const userMessage = {
-        id: chatMessages.length + 1,
+        id: Date.now(),
         text: prompt.trim(),
         sender: 'user',
         timestamp: new Date()
       };
 
       setChatMessages(prev => [...prev, userMessage]);
+      setIsTyping(true);
 
       // Generate AI response
       const aiInsight = await groqService.generateInsights(tasks, energyLevel, northStar, prompt.trim());
 
       const aiResponse = {
-        id: chatMessages.length + 2,
+        id: Date.now() + 1,
         text: aiInsight.insight,
         sender: 'ai',
         timestamp: new Date()
@@ -192,21 +210,23 @@ const AICoachPage: React.FC = () => {
 
       // Add error message to chat
       const errorMessage = {
-        id: chatMessages.length + 1,
+        id: Date.now() + 1,
         text: `Sorry, I couldn't process that request right now. Please try again later.`,
         sender: 'ai',
         timestamp: new Date()
       };
 
       setChatMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
     }
   };
 
-  const handleSendMessage = () => {
-    if (inputText.trim() === '') return;
+  const handleSendMessage = async () => {
+    if (inputText.trim() === '' || isTyping) return;
 
     const newMessage = {
-      id: chatMessages.length + 1,
+      id: Date.now(),
       text: inputText,
       sender: 'user',
       timestamp: new Date()
@@ -215,33 +235,33 @@ const AICoachPage: React.FC = () => {
     setChatMessages(prev => [...prev, newMessage]);
     const currentInput = inputText;
     setInputText('');
+    setIsTyping(true);
 
-    // Generate AI response using AI service
-    setTimeout(async () => {
-      try {
-        const aiInsight = await groqService.generateInsights(tasks, energyLevel, northStar, currentInput);
+    try {
+      const aiInsight = await groqService.generateInsights(tasks, energyLevel, northStar, currentInput);
 
-        const aiResponse = {
-          id: Date.now(),
-          text: aiInsight.insight,
-          sender: 'ai',
-          timestamp: new Date()
-        };
+      const aiResponse = {
+        id: Date.now() + 1,
+        text: aiInsight.insight,
+        sender: 'ai',
+        timestamp: new Date()
+      };
 
-        setChatMessages(prev => [...prev, aiResponse]);
-      } catch (error) {
-        console.error('Error generating AI response:', error);
+      setChatMessages(prev => [...prev, aiResponse]);
+    } catch (error) {
+      console.error('Error generating AI response:', error);
 
-        const fallbackResponse = {
-          id: Date.now(),
-          text: "I'm having trouble connecting to the AI service right now. Could you try asking again?",
-          sender: 'ai',
-          timestamp: new Date()
-        };
+      const fallbackResponse = {
+        id: Date.now() + 1,
+        text: "I'm having trouble connecting to the AI service right now. Could you try asking again?",
+        sender: 'ai',
+        timestamp: new Date()
+      };
 
-        setChatMessages(prev => [...prev, fallbackResponse]);
-      }
-    }, 1000);
+      setChatMessages(prev => [...prev, fallbackResponse]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const quickActions = [
@@ -312,6 +332,7 @@ const AICoachPage: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
+                className={cn(isTyping && "opacity-50 pointer-events-none")}
               >
                 <GlassCard
                   className="p-5 cursor-pointer hover:scale-[1.02] transition-transform h-full"
@@ -347,12 +368,12 @@ const AICoachPage: React.FC = () => {
                   AI Coaching Session
                 </h2>
                 <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  Active
+                  <span className={`w-1.5 h-1.5 rounded-full ${isTyping ? 'bg-amber-500 animate-[pulse_0.5s_ease-in-out_infinite]' : 'bg-emerald-500 animate-pulse'}`}></span>
+                  {isTyping ? 'Reasoning...' : 'Active'}
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-5 space-y-5 scrollbar-thin">
+              <div className="flex-1 overflow-y-auto p-5 space-y-5 scrollbar-thin" ref={scrollRef}>
                 {chatMessages.map((message) => (
                   <motion.div
                     key={message.id}
@@ -366,13 +387,31 @@ const AICoachPage: React.FC = () => {
                         : 'bg-muted/80 backdrop-blur-md text-foreground rounded-bl-none border border-white/5'
                         }`}
                     >
-                      <p className="text-sm md:text-base leading-relaxed">{message.text}</p>
+                      <p className="text-sm md:text-base leading-relaxed whitespace-pre-wrap">{message.text}</p>
                       <p className={`text-[10px] mt-1.5 opacity-50 ${message.sender === 'user' ? 'text-right' : 'text-left'}`}>
                         {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                   </motion.div>
                 ))}
+
+                {/* Typing Indicator */}
+                <AnimatePresence>
+                  {isTyping && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      className="flex justify-start"
+                    >
+                      <div className="bg-muted/80 backdrop-blur-md rounded-2xl rounded-bl-none px-4 py-3 border border-white/5 flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.3s]"></span>
+                        <span className="w-2 h-2 rounded-full bg-primary/40 animate-bounce [animation-delay:-0.15s]"></span>
+                        <span className="w-2 h-2 rounded-full bg-primary/40 animate-bounce"></span>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               <div className="p-4 border-t border-border/50 bg-white/5">
@@ -389,13 +428,18 @@ const AICoachPage: React.FC = () => {
                         handleSendMessage();
                       }
                     }}
+                    disabled={isTyping}
                   />
                   <Button
                     className="h-auto sm:h-auto py-3 px-8 rounded-xl bg-primary hover:bg-primary/90"
                     onClick={handleSendMessage}
-                    disabled={!inputText.trim()}
+                    disabled={!inputText.trim() || isTyping}
                   >
-                    Send
+                    {isTyping ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    ) : (
+                      <Send className="w-5 h-5" />
+                    )}
                   </Button>
                 </div>
               </div>
@@ -449,11 +493,14 @@ const AICoachPage: React.FC = () => {
                     breakRequested ? "bg-emerald-600 hover:bg-emerald-500" : "bg-white/10 hover:bg-white/20 text-white"
                   )}
                   onClick={handleBreakRequest}
-                  disabled={breakRequested}
+                  disabled={breakRequested || isTyping}
                 >
                   {breakRequested ? (
                     <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-full border-2 border-white/50 border-t-transparent animate-spin"></div>
+                      <span className="relative flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                      </span>
                       Processing...
                     </div>
                   ) : (
@@ -513,7 +560,11 @@ const AICoachPage: React.FC = () => {
                         <Clock className="w-4 h-4" />
                         <span>{task.estimated_minutes || '25'} min</span>
                       </div>
-                      <Button size="sm" className="rounded-xl px-5 text-xs font-bold bg-primary hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20">
+                      <Button
+                        size="sm"
+                        className="rounded-xl px-5 text-xs font-bold bg-primary hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20"
+                        onClick={() => toast.success(`Starting: ${task.title}`, { description: 'Focus timer initialized.' })}
+                      >
                         Execute
                       </Button>
                     </div>
