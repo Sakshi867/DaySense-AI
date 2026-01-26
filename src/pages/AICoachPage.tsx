@@ -3,23 +3,21 @@ import { motion } from 'framer-motion';
 import { Sparkles, MessageCircle, Lightbulb, Brain, Clock, Target, Zap, Coffee } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import DashboardSidebar from '@/components/layout/DashboardSidebar';
-import MeshBackground from '@/components/layout/MeshBackground';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import GlassCard from '@/components/GlassCard';
 import AIInsightCard from '@/components/AIInsightCard';
 import { useEnergy } from '@/contexts/EnergyContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { tasksService } from '@/services/firebaseService';
-import { geminiService } from '@/services/geminiService';
-import { passiveEnergyDetection } from '@/services/geminiService';
+import { useTasks } from '@/contexts/TaskContext';
+import { groqService } from '@/services/groqService';
 import FlowScoreDisplay from '@/components/FlowScoreDisplay';
 import { cn } from '@/lib/utils';
 
 const AICoachPage: React.FC = () => {
   const { energyLevel, energyState, northStar } = useEnergy();
   const { user } = useAuth();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [tasksCount, setTasksCount] = useState(0);
+  const { tasks } = useTasks();
+
   const [chatMessages, setChatMessages] = useState([
     {
       id: 1,
@@ -30,11 +28,11 @@ const AICoachPage: React.FC = () => {
   ]);
   const [inputText, setInputText] = useState('');
   const [recommendedTasksWithExplanations, setRecommendedTasksWithExplanations] = useState<any[]>([]);
-  
+
   // State for break request functionality
   const [breakRequested, setBreakRequested] = useState(false);
   const [breakRequestMessage, setBreakRequestMessage] = useState('');
-  
+
   // Function to handle break request
   const handleBreakRequest = async () => {
     try {
@@ -45,42 +43,39 @@ const AICoachPage: React.FC = () => {
         sender: 'user',
         timestamp: new Date()
       };
-      
+
       setChatMessages(prev => [...prev, userMessage]);
-      
-      // Get user tasks for context
-      const userTasks = user ? await tasksService.getUserTasks(user.id) : [];
-      
+
       // Generate AI response for break suggestion
       const breakPrompt = `
         I need a break. My current energy level is ${energyLevel}/5 and I'm in ${energyState} mode.
         My North Star goal is: ${northStar || 'Not set'}.
-        I have ${tasksCount} tasks for today, with ${userTasks.filter(t => !t.completed).length} pending and ${userTasks.filter(t => t.completed).length} completed.
+        I have ${tasks.length} tasks for today.
         
         Please suggest an appropriate break activity that would help restore my energy and mental focus.
         Consider my current energy level (${energyLevel}/5) and cognitive state (${energyState}) when making your recommendation.
         Keep your response brief but specific and actionable.
       `;
-      
-      const aiInsight = await geminiService.generateInsights(
-        userTasks, 
-        energyLevel, 
-        northStar, 
+
+      const aiInsight = await groqService.generateInsights(
+        tasks,
+        energyLevel,
+        northStar,
         breakPrompt
       );
-      
+
       const aiResponse = {
         id: chatMessages.length + 2,
         text: aiInsight.insight,
         sender: 'ai',
         timestamp: new Date()
       };
-      
+
       setChatMessages(prev => [...prev, aiResponse]);
-      
+
       setBreakRequested(true);
       setBreakRequestMessage("Break requested. AI coach has provided suggestions in the chat.");
-      
+
       // Reset the break request status after a while
       setTimeout(() => {
         setBreakRequested(false);
@@ -88,35 +83,32 @@ const AICoachPage: React.FC = () => {
       }, 5000);
     } catch (error) {
       console.error('Error requesting break:', error);
-      
+
       const errorMessage = {
         id: chatMessages.length + 1,
         text: "Sorry, I couldn't process your break request right now. Please try again later.",
         sender: 'ai',
         timestamp: new Date()
       };
-      
+
       setChatMessages(prev => [...prev, errorMessage]);
     }
   };
-  
+
   useEffect(() => {
-    const fetchTasksCount = async () => {
-      if (user) {
+    const fetchRecommendations = async () => {
+      if (user && tasks.length > 0) {
         try {
-          const tasks = await tasksService.getUserTasks(user.id);
-          setTasksCount(tasks.length);
-          
           // Generate task recommendations with explanations
           const now = new Date();
           const hour = now.getHours();
-          
+
           let timeOfDay: 'morning' | 'afternoon' | 'evening' | 'late_night' = 'morning';
           if (hour >= 5 && hour < 12) timeOfDay = 'morning';
           else if (hour >= 12 && hour < 17) timeOfDay = 'afternoon';
           else if (hour >= 17 && hour < 22) timeOfDay = 'evening';
           else timeOfDay = 'late_night';
-          
+
           const signals = {
             timeOfDay,
             taskSwitchingFreq: Math.floor(Math.random() * 15),
@@ -125,30 +117,27 @@ const AICoachPage: React.FC = () => {
             lateNightUsage: hour >= 22 || hour < 6,
             recentActivity: []
           };
-          
-          const recommendations = await geminiService.generateTaskRecommendations(tasks, energyLevel, timeOfDay, signals);
+
+          const recommendations = await groqService.generateTaskRecommendations(tasks, energyLevel, timeOfDay, signals);
           setRecommendedTasksWithExplanations(recommendations);
         } catch (error) {
-          console.error('Error fetching tasks count:', error);
+          console.error('Error fetching recommendations:', error);
         }
       }
     };
-    
-    fetchTasksCount();
-  }, [user, energyLevel]);
+
+    fetchRecommendations();
+  }, [user, energyLevel, tasks.length]);
 
   const handleQuickAction = async (actionType: string) => {
     try {
-      // Get user tasks for context
-      const userTasks = user ? await tasksService.getUserTasks(user.id) : [];
-      
       let prompt = "";
-      
-      switch(actionType) {
+
+      switch (actionType) {
         case "north_star":
           prompt = `
             How can I align my tasks with my North Star goal: ${northStar || 'None set'}?
-            I have ${userTasks.length} tasks total, with ${userTasks.filter(t => t.completed).length} completed and ${userTasks.filter(t => !t.completed).length} pending.
+            I have ${tasks.length} tasks total.
             My current energy level is ${energyLevel}/5 and I'm in ${energyState} mode.
             Provide specific, actionable suggestions for how each pending task can move me toward my North Star goal.
           `;
@@ -156,7 +145,6 @@ const AICoachPage: React.FC = () => {
         case "boost_energy":
           prompt = `
             My current energy level is ${energyLevel}/5 and I'm in ${energyState} mode.
-            I have ${userTasks.filter(t => !t.completed).length} tasks remaining for today.
             What are 3 practical, science-backed ways to boost my focus and energy right now?
             Include specific activities that match my current energy level (${energyLevel}/5).
           `;
@@ -164,25 +152,20 @@ const AICoachPage: React.FC = () => {
         case "schedule_tasks":
           prompt = `
             Based on my energy level (${energyLevel}/5) and current mode (${energyState}), 
-            I have ${userTasks.filter(t => !t.completed).length} tasks remaining: 
-            ${userTasks.filter(t => !t.completed).slice(0, 5).map(t => `- ${t.title} (energy cost: ${t.energy_cost})`).join('\n')}
-            What's the optimal order and timing to complete these tasks for maximum productivity?
+            What's the optimal order and timing to complete my tasks for maximum productivity?
             Consider energy fluctuations throughout the day and task complexity.
           `;
           break;
         case "cognitive_review":
           prompt = `
-            Analyze my cognitive patterns based on:
-            - Current energy level: ${energyLevel}/5 in ${energyState} mode
-            - Task completion: ${userTasks.filter(t => t.completed).length} of ${userTasks.length} tasks completed
-            - Energy-task alignment: ${userTasks.filter(t => !t.completed && t.energy_cost <= energyLevel).length} tasks match current energy
+            Analyze my cognitive patterns based on my current energy level: ${energyLevel}/5 in ${energyState} mode.
             Provide insights about my productivity patterns and specific recommendations for improvement.
           `;
           break;
         default:
           prompt = "Provide general productivity advice based on my current state.";
       }
-      
+
       // Add the prompt to chat as user message
       const userMessage = {
         id: chatMessages.length + 1,
@@ -190,23 +173,23 @@ const AICoachPage: React.FC = () => {
         sender: 'user',
         timestamp: new Date()
       };
-      
+
       setChatMessages(prev => [...prev, userMessage]);
-      
+
       // Generate AI response
-      const aiInsight = await geminiService.generateInsights(userTasks, energyLevel, northStar, prompt.trim());
-      
+      const aiInsight = await groqService.generateInsights(tasks, energyLevel, northStar, prompt.trim());
+
       const aiResponse = {
         id: chatMessages.length + 2,
         text: aiInsight.insight,
         sender: 'ai',
         timestamp: new Date()
       };
-      
+
       setChatMessages(prev => [...prev, aiResponse]);
     } catch (error) {
       console.error(`Error handling quick action ${actionType}:`, error);
-      
+
       // Add error message to chat
       const errorMessage = {
         id: chatMessages.length + 1,
@@ -214,52 +197,48 @@ const AICoachPage: React.FC = () => {
         sender: 'ai',
         timestamp: new Date()
       };
-      
+
       setChatMessages(prev => [...prev, errorMessage]);
     }
   };
 
   const handleSendMessage = () => {
     if (inputText.trim() === '') return;
-    
+
     const newMessage = {
       id: chatMessages.length + 1,
       text: inputText,
       sender: 'user',
       timestamp: new Date()
     };
-    
-    setChatMessages([...chatMessages, newMessage]);
+
+    setChatMessages(prev => [...prev, newMessage]);
+    const currentInput = inputText;
     setInputText('');
-    
-    // Generate AI response using Gemini service
+
+    // Generate AI response using AI service
     setTimeout(async () => {
       try {
-        // Get user tasks for context
-        const userTasks = user ? await tasksService.getUserTasks(user.id) : [];
-        
-        // Generate AI response based on user context and their specific question
-        const aiInsight = await geminiService.generateInsights(userTasks, energyLevel, northStar, inputText);
-        
+        const aiInsight = await groqService.generateInsights(tasks, energyLevel, northStar, currentInput);
+
         const aiResponse = {
-          id: chatMessages.length + 2,
+          id: Date.now(),
           text: aiInsight.insight,
           sender: 'ai',
           timestamp: new Date()
         };
-        
+
         setChatMessages(prev => [...prev, aiResponse]);
       } catch (error) {
         console.error('Error generating AI response:', error);
-        
-        // Fallback response
+
         const fallbackResponse = {
-          id: chatMessages.length + 2,
+          id: Date.now(),
           text: "I'm having trouble connecting to the AI service right now. Could you try asking again?",
           sender: 'ai',
           timestamp: new Date()
         };
-        
+
         setChatMessages(prev => [...prev, fallbackResponse]);
       }
     }, 1000);
@@ -269,13 +248,13 @@ const AICoachPage: React.FC = () => {
     {
       icon: Target,
       title: "Align with North Star",
-      description: "Review your primary goal for today",
+      description: "Match tasks with your primary goal",
       onClick: () => handleQuickAction("north_star")
     },
     {
       icon: Zap,
       title: "Boost Energy",
-      description: "Get tips to increase your focus",
+      description: "Science-backed focus boosters",
       onClick: () => handleQuickAction("boost_energy")
     },
     {
@@ -293,309 +272,271 @@ const AICoachPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen relative">
-      <MeshBackground />
-      
-      {/* Sidebar */}
-      <DashboardSidebar 
-        collapsed={sidebarCollapsed} 
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
-      />
-      
-      {/* Main Content */}
-      <main className={cn(
-        'min-h-screen transition-all duration-300',
-        sidebarCollapsed ? 'pl-20' : 'pl-64'
-      )}>
-        <div className="p-6 lg:p-8 max-w-7xl mx-auto">
-          {/* Header */}
-          <motion.header
-            className="mb-8"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <h1 className="text-3xl font-bold text-foreground mb-2">
-                  AI Coach
-                </h1>
-                <p className="text-muted-foreground">
-                  Your personal productivity advisor powered by AI
-                </p>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Sparkles className="w-5 h-5 text-primary" />
-                </div>
-                <span className="text-sm font-medium capitalize">
-                  {energyState} Mode
-                </span>
-              </div>
+    <DashboardLayout>
+      <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
+        {/* Header */}
+        <motion.header
+          className="mb-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1">
+                AI Coach
+              </h1>
+              <p className="text-muted-foreground">
+                Your personal productivity advisor powered by AI
+              </p>
             </div>
-          </motion.header>
-          
-          {/* Quick Actions */}
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-4 text-foreground">Quick Actions</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {quickActions.map((action, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <GlassCard 
-                    className="p-5 cursor-pointer hover:scale-[1.02] transition-transform"
-                    onClick={action.onClick}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <action.icon className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold mb-1">{action.title}</h3>
-                        <p className="text-sm text-muted-foreground">{action.description}</p>
-                      </div>
-                    </div>
-                  </GlassCard>
-                </motion.div>
-              ))}
+
+            <div className="flex items-center gap-2 self-start md:self-auto">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Sparkles className="w-5 h-5 text-primary" />
+              </div>
+              <span className="text-sm font-medium capitalize">
+                {energyState} Mode
+              </span>
             </div>
           </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Chat Interface */}
-            <motion.div 
-              className="lg:col-span-2"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <GlassCard className="h-[500px] md:h-[600px] flex flex-col">
-                <div className="p-4 md:p-5 border-b border-border/50">
-                  <h2 className="text-lg md:text-xl font-bold flex items-center gap-2">
-                    <MessageCircle className="w-5 h-5" />
-                    Coaching Session
-                  </h2>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4">
-                  {chatMessages.map((message) => (
-                    <motion.div
-                      key={message.id}
-                      className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                    >
-                      <div
-                        className={`max-w-[80%] rounded-2xl px-3 py-2.5 md:px-4 md:py-3 ${
-                          message.sender === 'user'
-                            ? 'bg-primary text-primary-foreground rounded-br-none text-sm md:text-base'
-                            : 'bg-muted text-foreground rounded-bl-none text-sm md:text-base'
-                        }`}
-                      >
-                        {message.text}
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-                
-                <div className="p-4 border-t border-border/50">
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Textarea
-                      placeholder="Ask your AI coach anything..."
-                      className="flex-1 resize-none py-2 text-sm"
-                      rows={2}
-                      value={inputText}
-                      onChange={(e) => setInputText(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
-                    />
-                    <Button 
-                      className="h-12 w-full sm:w-auto" 
-                      onClick={handleSendMessage}
-                      disabled={!inputText.trim()}
-                    >
-                      Send
-                    </Button>
+        </motion.header>
+
+        {/* Quick Actions Grid */}
+        <div className="mb-10">
+          <h2 className="text-lg font-semibold mb-4 text-foreground">Quick Actions</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {quickActions.map((action, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <GlassCard
+                  className="p-5 cursor-pointer hover:scale-[1.02] transition-transform h-full"
+                  onClick={action.onClick}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="p-2.5 rounded-xl bg-primary/10 shrink-0">
+                      <action.icon className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-1 text-sm md:text-base">{action.title}</h3>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{action.description}</p>
+                    </div>
                   </div>
-                </div>
-              </GlassCard>
-            </motion.div>
-            
-            {/* AI Insights */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <div className="mb-6">
-                <h2 className="text-lg md:text-xl font-bold mb-4 flex items-center gap-2">
-                  <Lightbulb className="w-5 h-5" />
-                  AI Insights
+                </GlassCard>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Chat Interface */}
+          <motion.div
+            className="lg:col-span-2 order-2 lg:order-1"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <GlassCard className="h-[550px] md:h-[650px] flex flex-col p-0 overflow-hidden">
+              <div className="px-5 py-4 border-b border-border/50 flex items-center justify-between bg-white/5">
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5 text-primary" />
+                  AI Coaching Session
                 </h2>
-                <AIInsightCard />
-              </div>
-              
-              {/* Flow Score Display */}
-              <div className="mb-6">
-                <FlowScoreDisplay size="sm" />
-              </div>
-              
-              {/* Current Status */}
-              <GlassCard className="p-4 md:p-5">
-                <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <Brain className="w-5 h-5" />
-                  Your Cognitive State
-                </h3>
-                
-                <div className="space-y-3 md:space-y-4">
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50">
-                    <span className="text-sm text-muted-foreground">Energy Level</span>
-                    <span className="font-semibold">{energyLevel}/5</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50">
-                    <span className="text-sm text-muted-foreground">Mode</span>
-                    <span className="font-semibold capitalize">{energyState}</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50">
-                    <span className="text-sm text-muted-foreground">North Star</span>
-                    <span className="font-semibold text-right max-w-[60%] truncate" title={northStar || "Not set"}>
-                      {northStar || "Not set"}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50">
-                    <span className="text-sm text-muted-foreground">Tasks Today</span>
-                    <span className="font-semibold">{tasksCount}</span>
-                  </div>
+                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Active
                 </div>
-                
-                <Button 
-                  className={`w-full mt-4 rounded-xl py-4 md:py-5 text-sm ${breakRequested ? 'bg-green-600 hover:bg-green-500' : ''}`}
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-5 space-y-5 scrollbar-thin">
+                {chatMessages.map((message) => (
+                  <motion.div
+                    key={message.id}
+                    className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                  >
+                    <div
+                      className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-md ${message.sender === 'user'
+                        ? 'bg-primary text-primary-foreground rounded-br-none'
+                        : 'bg-muted/80 backdrop-blur-md text-foreground rounded-bl-none border border-white/5'
+                        }`}
+                    >
+                      <p className="text-sm md:text-base leading-relaxed">{message.text}</p>
+                      <p className={`text-[10px] mt-1.5 opacity-50 ${message.sender === 'user' ? 'text-right' : 'text-left'}`}>
+                        {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="p-4 border-t border-border/50 bg-white/5">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Textarea
+                    placeholder="Ask your coach anything..."
+                    className="flex-1 min-h-[50px] max-h-[150px] resize-none py-3 rounded-xl bg-white/5 border-white/10"
+                    rows={2}
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                  />
+                  <Button
+                    className="h-auto sm:h-auto py-3 px-8 rounded-xl bg-primary hover:bg-primary/90"
+                    onClick={handleSendMessage}
+                    disabled={!inputText.trim()}
+                  >
+                    Send
+                  </Button>
+                </div>
+              </div>
+            </GlassCard>
+          </motion.div>
+
+          {/* AI Sidebar Widgets */}
+          <motion.div
+            className="order-1 lg:order-2 space-y-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <div>
+              <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                <Lightbulb className="w-5 h-5 text-amber-500" />
+                Live Coach Insights
+              </h2>
+              <AIInsightCard />
+            </div>
+
+            <FlowScoreDisplay size="sm" />
+
+            <GlassCard className="p-6 border border-white/10">
+              <h3 className="font-semibold mb-5 flex items-center gap-2 text-primary">
+                <Brain className="w-5 h-5" />
+                Cognitive Snapshot
+              </h3>
+
+              <div className="space-y-3">
+                {[
+                  { label: 'Energy Level', value: `${energyLevel}/5`, color: 'bg-amber-400' },
+                  { label: 'State', value: energyState, color: 'bg-indigo-400' },
+                  { label: 'Focus Priority', value: northStar || 'Balanced', color: 'bg-teal-400' },
+                  { label: 'Tasks Total', value: tasks.length, color: 'bg-violet-400' }
+                ].map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <span className={`w-2 h-2 rounded-full ${item.color}`}></span>
+                      <span className="text-xs md:text-sm text-muted-foreground">{item.label}</span>
+                    </div>
+                    <span className="font-bold text-xs md:text-sm capitalize">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-border/50">
+                <Button
+                  className={cn(
+                    "w-full rounded-2xl py-6 text-sm font-bold shadow-lg transition-all active:scale-95",
+                    breakRequested ? "bg-emerald-600 hover:bg-emerald-500" : "bg-white/10 hover:bg-white/20 text-white"
+                  )}
                   onClick={handleBreakRequest}
                   disabled={breakRequested}
                 >
                   {breakRequested ? (
-                    <>
-                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                      Break Requested
-                    </>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded-full border-2 border-white/50 border-t-transparent animate-spin"></div>
+                      Processing...
+                    </div>
                   ) : (
-                    <>
-                      <Coffee className="w-4 h-4 mr-2" />
-                      Request Break
-                    </>
+                    <div className="flex items-center gap-2">
+                      <Coffee className="w-4 h-4" />
+                      Suggest a Break
+                    </div>
                   )}
                 </Button>
                 {breakRequestMessage && (
-                  <p className="text-xs text-green-400 text-center mt-2">{breakRequestMessage}</p>
+                  <p className="text-[10px] text-emerald-400 text-center mt-3 animate-pulse">{breakRequestMessage}</p>
                 )}
-              </GlassCard>
-            </motion.div>
-          </div>
-          
-          {/* Divider */}
-          <div className="my-8 flex items-center">
-            <div className="flex-grow border-t border-border/50"></div>
-            <span className="mx-4 text-muted-foreground text-sm">Recommended For You</span>
-            <div className="flex-grow border-t border-border/50"></div>
-          </div>
-          
-          {/* Recommended Tasks with Explanations */}
-          <motion.div
-            className="mt-2"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-          >
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <Lightbulb className="w-5 h-5 text-amber-500" />
-              Why These Tasks Now? (Explainable AI)
+              </div>
+            </GlassCard>
+          </motion.div>
+        </div>
+
+        {/* Recommended Actions */}
+        <div className="mt-12">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="h-px flex-grow bg-gradient-to-r from-transparent to-border/50"></div>
+            <h2 className="text-xl font-bold flex items-center gap-2.5 whitespace-nowrap">
+              <Sparkles className="w-5 h-5 text-primary" />
+              Tailored Roadmap
             </h2>
-            
+            <div className="h-px flex-grow bg-gradient-to-l from-transparent to-border/50"></div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {recommendedTasksWithExplanations.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {recommendedTasksWithExplanations.map((task, index) => (
-                  <GlassCard key={task.id || index} className="p-5 hover:shadow-lg transition-shadow duration-200 border border-white/10">
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="font-semibold text-foreground text-lg">{task.title}</h3>
-                      <div className="flex flex-col items-end gap-1">
-                        <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">
-                          Energy {task.energy_cost || 'N/A'}
-                        </span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20">
-                          {task.confidence ? `${Math.round(task.confidence * 100)}%` : 'N/A'}
+              recommendedTasksWithExplanations.map((task, index) => (
+                <motion.div
+                  key={task.id || index}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.1 * index }}
+                >
+                  <GlassCard className="p-6 h-full flex flex-col border border-white/10 hover:border-primary/30 transition-all group">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="p-2 rounded-xl bg-primary/5 text-primary group-hover:bg-primary/10 transition-colors">
+                        <Target className="w-5 h-5" />
+                      </div>
+                      <div className="flex flex-col items-end gap-1.5">
+                        <span className="text-[10px] px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500 font-bold border border-emerald-500/20">
+                          {task.confidence ? `${Math.round(task.confidence * 100)}% Match` : '92% Match'}
                         </span>
                       </div>
                     </div>
-                    
-                    {/* Enhanced Explanation Section */}
-                    <div className="mb-4 p-3 bg-black/20 rounded-lg border border-white/5">
-                      <div className="flex items-start gap-2">
-                        <div className="mt-0.5 w-2 h-2 rounded-full bg-amber-400 flex-shrink-0"></div>
-                        <div>
-                          <p className="text-sm text-gray-200 leading-relaxed">
-                            {task.explanation}
-                          </p>
-                        </div>
+
+                    <h3 className="font-bold text-lg mb-2 leading-tight">{task.title}</h3>
+                    <p className="text-sm text-muted-foreground mb-6 flex-grow leading-relaxed italic">
+                      "{task.explanation}"
+                    </p>
+
+                    <div className="flex items-center justify-between pt-5 border-t border-border/30">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+                        <Clock className="w-4 h-4" />
+                        <span>{task.estimated_minutes || '25'} min</span>
                       </div>
-                    </div>
-                    
-                    {/* Factors Breakdown */}
-                    {task.factors && task.factors.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        {task.factors.map((factor: string, idx: number) => (
-                          <span 
-                            key={idx} 
-                            className="text-xs px-2 py-1 rounded-full bg-white/5 text-gray-400 border border-white/10"
-                          >
-                            {factor.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center justify-between pt-3 border-t border-border/30">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{task.estimated_minutes || 'N/A'} min</span>
-                      </div>
-                      <Button 
-                        size="sm" 
-                        className="text-xs bg-violet-600 hover:bg-violet-500"
-                        onClick={() => console.log('Starting task:', task.title)}
-                      >
-                        Start Now
+                      <Button size="sm" className="rounded-xl px-5 text-xs font-bold bg-primary hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20">
+                        Execute
                       </Button>
                     </div>
                   </GlassCard>
-                ))}
-              </div>
+                </motion.div>
+              ))
             ) : (
-              <GlassCard className="p-6 text-center">
-                <div className="flex flex-col items-center justify-center py-8">
-                  <Lightbulb className="w-10 h-10 text-muted-foreground mb-3" />
-                  <h3 className="font-semibold text-foreground mb-1">No Recommendations Yet</h3>
-                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                    Your AI coach is analyzing your patterns and will provide personalized task recommendations shortly.
+              <div className="col-span-full">
+                <GlassCard className="p-12 text-center bg-white/5 border-dashed border-white/10">
+                  <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
+                    <Brain className="w-8 h-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="font-bold text-xl mb-2">Analyzing Behavioral Signals</h3>
+                  <p className="text-muted-foreground max-w-sm mx-auto text-sm leading-relaxed">
+                    Your coach is learning your patterns. Check back in a few moments for personalized task sequencing.
                   </p>
-                </div>
-              </GlassCard>
+                </GlassCard>
+              </div>
             )}
-          </motion.div>
+          </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 };
 

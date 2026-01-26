@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useEnergy } from '@/contexts/EnergyContext';
 import { useDailyTracking } from '@/hooks/useDailyTracking';
-import { geminiService } from '@/services/geminiService';
+import { groqService } from '@/services/groqService';
 
 export interface BioOrbInsight {
   insightMessage: string;
@@ -21,18 +21,18 @@ export const useBioOrbInsights = () => {
     try {
       // Get active/incomplete tasks
       const activeTasks = trackingData.pendingTasks.filter((task: any) => !task.completed);
-      
+
       // Get current flow score (or 50 as neutral if undefined)
       const flowScore = trackingData.flowScore !== undefined ? trackingData.flowScore : 50;
-      
+
       // Generate AI-powered insight
-      const aiInsight = await geminiService.generateBioOrbInsights(
+      const aiInsight = await groqService.generateBioOrbInsights(
         energyLevel,
         flowScore,
         activeTasks,
         trackingData.passiveSignals
       );
-      
+
       setInsight(aiInsight);
     } catch (error) {
       console.error('Error generating Bio-Orb insight:', error);
@@ -46,7 +46,7 @@ export const useBioOrbInsights = () => {
   // Generate fallback insight when AI fails
   const generateFallbackInsight = (currentEnergy: number, flowScore?: number): BioOrbInsight => {
     const effectiveFlowScore = flowScore !== undefined ? flowScore : 50;
-    
+
     let visualCue: 'green' | 'yellow' | 'red' = 'green';
     let pulseSpeed: 'slow' | 'medium' | 'fast' = 'medium';
     let glowIntensity: 'low' | 'medium' | 'high' = 'medium';

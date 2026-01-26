@@ -3,7 +3,7 @@ import { useEnergy } from '@/contexts/EnergyContext';
 import { useTasks } from '@/contexts/TaskContext';
 import { useDailyTracking } from '@/hooks/useDailyTracking';
 import { FlowScoreContext } from '@/contexts/FlowScoreContext';
-import { geminiService } from '@/services/geminiService';
+import { groqService } from '@/services/groqService';
 
 interface DailyReflection {
   date: string;
@@ -44,11 +44,11 @@ export const ReflectionProvider: React.FC<{ children: ReactNode }> = ({ children
   const { energyLevel } = useEnergy();
   const { tasks } = useTasks();
   const { trackingData } = useDailyTracking();
-  
+
   // Defer flowScore access to when it's actually needed
   const flowScoreContext = useContext(FlowScoreContext);
   const flowScore = flowScoreContext?.flowScore || { currentScore: null };
-  
+
   const [reflections, setReflections] = useState<DailyReflection[]>([]);
   const [currentReflection, setCurrentReflection] = useState<DailyReflection | null>(null);
   const [loading, setLoading] = useState(false);
@@ -58,15 +58,15 @@ export const ReflectionProvider: React.FC<{ children: ReactNode }> = ({ children
   const generateDailyReflection = useCallback(async (): Promise<DailyReflection | null> => {
     setLoading(true);
     setError(null);
-    
+
     try {
       // Check if we have enough data
       if (trackingData.completedTasks.length === 0) {
         throw new Error('Not enough data to generate reflection');
       }
 
-      // Generate reflection using Gemini service
-      const reflectionData = await geminiService.generateEndOfDayReflection(
+      // Generate reflection using AI service
+      const reflectionData = await groqService.generateEndOfDayReflection(
         trackingData.energyTimeline,
         trackingData.completedTasks,
         trackingData.pendingTasks,
@@ -95,7 +95,7 @@ export const ReflectionProvider: React.FC<{ children: ReactNode }> = ({ children
       };
 
       const today = new Date().toISOString().split('T')[0];
-      
+
       const newReflection: DailyReflection = {
         date: today,
         dailySummary: reflectionData.fullReflection || 'Reflection generated',
@@ -172,12 +172,12 @@ export const ReflectionProvider: React.FC<{ children: ReactNode }> = ({ children
     const checkEndOfDay = () => {
       const now = new Date();
       const hour = now.getHours();
-      
+
       // Generate reflection between 9 PM and 10 PM if not already generated today
       if (hour >= 21 && hour < 22) {
         const today = now.toISOString().split('T')[0];
         const existingReflection = getReflectionByDate(today);
-        
+
         if (!existingReflection && trackingData.completedTasks.length > 0) {
           generateDailyReflection();
         }
@@ -186,10 +186,10 @@ export const ReflectionProvider: React.FC<{ children: ReactNode }> = ({ children
 
     // Check immediately on mount
     checkEndOfDay();
-    
+
     // Check every minute
     const interval = setInterval(checkEndOfDay, 60000);
-    
+
     return () => clearInterval(interval);
   }, [generateDailyReflection, getReflectionByDate, trackingData.completedTasks.length]);
 
