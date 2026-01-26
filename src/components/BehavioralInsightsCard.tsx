@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Activity, Eye, MousePointer, Clock, Zap, TrendingUp } from 'lucide-react';
 import { useEnergy } from '@/contexts/EnergyContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { passiveEnergyDetection } from '@/services/geminiService';
+import { passiveEnergyDetection } from '@/services/groqService';
 import GlassCard from './GlassCard';
 import { cn } from '@/lib/utils';
 

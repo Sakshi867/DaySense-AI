@@ -4,7 +4,7 @@ import { Sparkles, Lightbulb, ArrowRight, Loader2, Activity } from 'lucide-react
 import { useEnergy } from '@/contexts/EnergyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { tasksService } from '@/services/firebaseService';
-import { geminiService, passiveEnergyDetection } from '@/services/geminiService';
+import { groqService, passiveEnergyDetection } from '@/services/groqService';
 import { cn } from '@/lib/utils';
 
 const AIInsightCard: React.FC = () => {
@@ -14,18 +14,18 @@ const AIInsightCard: React.FC = () => {
   const [passiveEnergyInsight, setPassiveEnergyInsight] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [behavioralSignals, setBehavioralSignals] = useState<any>(null);
-  
+
   // Function to collect behavioral signals
   const collectBehavioralSignals = (): any => {
     const now = new Date();
     const hour = now.getHours();
-    
+
     let timeOfDay: 'morning' | 'afternoon' | 'evening' | 'late_night' = 'morning';
     if (hour >= 5 && hour < 12) timeOfDay = 'morning';
     else if (hour >= 12 && hour < 17) timeOfDay = 'afternoon';
     else if (hour >= 17 && hour < 22) timeOfDay = 'evening';
     else timeOfDay = 'late_night';
-    
+
     // These would be calculated based on actual user behavior tracking
     // For now, using realistic placeholder values that would be collected from real user interactions
     return {
@@ -37,27 +37,27 @@ const AIInsightCard: React.FC = () => {
       recentActivity: [] // Would contain actual recent user actions
     };
   };
-  
+
   useEffect(() => {
     const fetchInsight = async () => {
       if (user) {
         try {
           setLoading(true);
-          
+
           // Collect behavioral signals
           const signals = collectBehavioralSignals();
           setBehavioralSignals(signals);
-          
+
           // Fetch user tasks
           const tasks = await tasksService.getUserTasks(user.id);
-          
+
           // Generate AI insight based on tasks and user data
-          const aiResult = await geminiService.generateInsights(tasks, energyLevel, northStar, undefined);
+          const aiResult = await groqService.generateInsights(tasks, energyLevel, northStar, undefined);
           setInsight(aiResult.insight);
-          
+
           // Generate task recommendations with explanations
-          const taskRecommendations = await geminiService.generateTaskRecommendations(tasks, energyLevel, signals.timeOfDay, signals);
-          
+          const taskRecommendations = await groqService.generateTaskRecommendations(tasks, energyLevel, signals.timeOfDay, signals);
+
           // Generate passive energy inference based on behavioral signals
           const passiveEnergyResult = await passiveEnergyDetection.inferEnergyFromBehavior(signals);
           setPassiveEnergyInsight(passiveEnergyResult.userMessage);
@@ -69,24 +69,24 @@ const AIInsightCard: React.FC = () => {
         }
       }
     };
-    
+
     fetchInsight();
-    
+
     // Set up interval to periodically update behavioral signals (simulating real-time tracking)
     const interval = setInterval(() => {
       if (user) {
         const signals = collectBehavioralSignals();
         setBehavioralSignals(signals);
-        
+
         // Update passive energy inference based on new signals
         passiveEnergyDetection.inferEnergyFromBehavior(signals)
           .then(result => setPassiveEnergyInsight(result.userMessage));
       }
     }, 30000); // Update every 30 seconds
-    
+
     return () => clearInterval(interval);
   }, [user, energyLevel, northStar]);
-  
+
   const getGradientClass = () => {
     switch (energyState) {
       case 'recharge':
@@ -97,7 +97,7 @@ const AIInsightCard: React.FC = () => {
         return 'from-violet-500/20 via-purple-500/10 to-transparent';
     }
   };
-  
+
   const getIconColor = () => {
     switch (energyState) {
       case 'recharge':
@@ -108,7 +108,7 @@ const AIInsightCard: React.FC = () => {
         return 'text-violet-500';
     }
   };
-  
+
   return (
     <motion.div
       className="glass-card relative overflow-hidden"
@@ -117,13 +117,13 @@ const AIInsightCard: React.FC = () => {
       transition={{ duration: 0.5, ease: 'easeOut' }}
     >
       {/* Gradient overlay */}
-      <div 
+      <div
         className={cn(
           'absolute inset-0 bg-gradient-to-r pointer-events-none',
           getGradientClass()
-        )} 
+        )}
       />
-      
+
       <div className="relative flex items-start gap-4">
         {/* Icon */}
         <motion.div
@@ -144,13 +144,13 @@ const AIInsightCard: React.FC = () => {
         >
           <Sparkles className={cn('w-6 h-6', getIconColor())} />
         </motion.div>
-        
+
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
             <h3 className="font-semibold text-foreground">AI Insight</h3>
             <Lightbulb className={cn('w-4 h-4', getIconColor())} />
           </div>
-          
+
           {loading ? (
             <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -167,9 +167,9 @@ const AIInsightCard: React.FC = () => {
               >
                 {insight}
               </motion.p>
-              
+
               {passiveEnergyInsight && (
-                <motion.div 
+                <motion.div
                   className="flex items-start gap-2 pt-2 border-t border-border/30 mt-2"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -183,7 +183,7 @@ const AIInsightCard: React.FC = () => {
               )}
             </div>
           )}
-          
+
           <motion.button
             className={cn(
               'mt-4 inline-flex items-center gap-2 text-sm font-medium haptic',

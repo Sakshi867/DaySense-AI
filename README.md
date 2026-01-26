@@ -42,7 +42,7 @@ Context & State Management
    ↓
 Firebase (Auth + Database)
    ↓
-Gemini AI (Insights)
+Groq AI (Insights)
 ```
 
 ---
@@ -52,7 +52,7 @@ Gemini AI (Insights)
 * React 18, TypeScript, Vite
 * Tailwind CSS, Radix UI, shadcn/ui, Framer Motion
 * Firebase
-* Google Gemini AI
+* Groq AI Backend
 
 ---
 
