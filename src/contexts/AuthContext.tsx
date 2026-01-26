@@ -29,7 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error: any) {
       console.warn("AuthContext: Firestore is working offline. Using cached data if available.");
-      
+
       // FALLBACK: If we are offline and have NO cached profile, 
       // create a temporary one so the UI doesn't stay blank.
       if (!user) {
@@ -53,7 +53,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const unsubscribe = authService.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
-        await fetchProfile(firebaseUser.uid, firebaseUser.email);
+        // Only fetch if identity changed or not yet loaded
+        if (!user || user.id !== firebaseUser.uid) {
+          await fetchProfile(firebaseUser.uid, firebaseUser.email);
+        }
       } else {
         setUser(null);
         setLoading(false);
@@ -61,13 +64,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => unsubscribe();
-  }, [fetchProfile]);
+  }, [fetchProfile, user?.id]);
 
   const signUp = async (email: string, pass: string, fullName: string) => {
     setLoading(true);
     try {
-      const firebaseUser = await authService.signUp(email, pass, fullName);
-      if (firebaseUser) await fetchProfile(firebaseUser.uid, email);
+      // Listener will pick this up and call fetchProfile
+      await authService.signUp(email, pass, fullName);
     } catch (error) {
       setLoading(false);
       throw error;
@@ -77,8 +80,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, pass: string) => {
     setLoading(true);
     try {
-      const firebaseUser = await authService.signIn(email, pass);
-      if (firebaseUser) await fetchProfile(firebaseUser.uid, firebaseUser.email);
+      // Listener will pick this up and call fetchProfile
+      await authService.signIn(email, pass);
     } catch (error) {
       setLoading(false);
       throw error;
@@ -86,17 +89,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    await authService.signOut();
-    setUser(null);
+    setLoading(true);
+    try {
+      await authService.signOut();
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateUser = async (data: Partial<UserProfile>) => {
     if (!user) return;
+    // Optimistic Update
+    const previousUser = { ...user };
+    setUser(prev => prev ? { ...prev, ...data } : null);
+
     try {
-      setUser(prev => prev ? { ...prev, ...data } : null);
       await profileService.updateProfile(user.id, data);
     } catch (error) {
-      console.error("Update failed, but local state preserved:", error);
+      console.error("Update failed, rolling back:", error);
+      setUser(previousUser);
+      throw error;
     }
   };
 

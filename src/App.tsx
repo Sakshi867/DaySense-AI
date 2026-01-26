@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -32,67 +33,67 @@ const App = () => (
               <FlowScoreProvider>
                 <ReflectionProvider>
                   <Routes>
-              {/* Public Route */}
-              <Route path="/" element={<LandingPage />} />
+                    {/* Public Route */}
+                    <Route path="/" element={<LandingPage />} />
 
-              {/* Onboarding Route - Protected */}
-              <Route 
-                path="/onboarding" 
-                element={
-                  <ProtectedRoute>
-                    <OnboardingPage />
-                  </ProtectedRoute>
-                } 
-              />
+                    {/* Onboarding Route - Protected */}
+                    <Route
+                      path="/onboarding"
+                      element={
+                        <ProtectedRoute>
+                          <OnboardingPage />
+                        </ProtectedRoute>
+                      }
+                    />
 
-              {/* Protected Dashboard Routes */}
-              <Route 
-                path="/dashboard" 
-                element={
-                  <ProtectedRoute>
-                    <DashboardPage />
-                  </ProtectedRoute>
-                } 
-              />
-              
-              <Route 
-                path="/dashboard/tasks" 
-                element={
-                  <ProtectedRoute>
-                    <TasksPage />
-                  </ProtectedRoute>
-                } 
-              />
-              
-              <Route 
-                path="/dashboard/analytics" 
-                element={
-                  <ProtectedRoute>
-                    <AnalyticsPage />
-                  </ProtectedRoute>
-                } 
-              />
-              
-              <Route 
-                path="/dashboard/coach" 
-                element={
-                  <ProtectedRoute>
-                    <AICoachPage />
-                  </ProtectedRoute>
-                } 
-              />
-              
-              <Route 
-                path="/dashboard/settings" 
-                element={
-                  <ProtectedRoute>
-                    <SettingsPage />
-                  </ProtectedRoute>
-                } 
-              />
+                    {/* Protected Dashboard Routes */}
+                    <Route
+                      path="/dashboard"
+                      element={
+                        <ProtectedRoute>
+                          <DashboardPage />
+                        </ProtectedRoute>
+                      }
+                    />
 
-              {/* Catch-all */}
-              <Route path="*" element={<NotFound />} />
+                    <Route
+                      path="/dashboard/tasks"
+                      element={
+                        <ProtectedRoute>
+                          <TasksPage />
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    <Route
+                      path="/dashboard/analytics"
+                      element={
+                        <ProtectedRoute>
+                          <AnalyticsPage />
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    <Route
+                      path="/dashboard/coach"
+                      element={
+                        <ProtectedRoute>
+                          <AICoachPage />
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    <Route
+                      path="/dashboard/settings"
+                      element={
+                        <ProtectedRoute>
+                          <SettingsPage />
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    {/* Catch-all */}
+                    <Route path="*" element={<NotFound />} />
                   </Routes>
                 </ReflectionProvider>
               </FlowScoreProvider>

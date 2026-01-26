@@ -19,10 +19,15 @@ interface TaskCardProps {
   index?: number;
 }
 
-const categoryIconMap = {
+const categoryIconMap: Record<string, any> = {
+  'work': Brain,
+  'personal': Palette,
+  'health': Heart,
+  'learning': Zap,
+  'admin': FileText,
+  // Legacy mappings
   'deep-work': Brain,
   'communication': MessageCircle,
-  'admin': FileText,
   'creative': Palette,
   'wellness': Heart,
 };
@@ -30,7 +35,7 @@ const categoryIconMap = {
 const TaskCard: React.FC<TaskCardProps> = ({ task, onToggle, index = 0 }) => {
   const { energyLevel } = useEnergy();
   const { trackTaskSwitch, trackTaskCompletion } = useBehaviorTracking();
-  
+
   // Handle task completion tracking
   const handleToggle = () => {
     if (onToggle) {
@@ -45,20 +50,21 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onToggle, index = 0 }) => {
     // Track task switch when clicking on the card
     trackTaskSwitch();
   };
-  
-  const Icon = categoryIconMap[task.category || 'admin'];
-  
+
+  const Icon = categoryIconMap[task.category || 'admin'] || FileText;
+
   const isLowEnergy = task.energy_cost > energyLevel && !task.completed;
   const isOptimal = task.energy_cost <= energyLevel && !task.completed;
-  
+
   const getEnergyBadgeClass = () => {
     if (task.energy_cost <= 2) return 'energy-badge-low';
     if (task.energy_cost === 3) return 'energy-badge-medium';
     return 'energy-badge-high';
   };
-  
+
   return (
     <motion.div
+      layout
       className={cn(
         'glass-card group cursor-pointer relative overflow-hidden',
         task.completed && 'opacity-60',
@@ -67,7 +73,11 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onToggle, index = 0 }) => {
       )}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, duration: 0.4 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{
+        layout: { duration: 0.3 },
+        opacity: { duration: 0.2 }
+      }}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
       onClick={handleToggle}
     >
@@ -80,7 +90,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onToggle, index = 0 }) => {
           transition={{ delay: index * 0.1 + 0.3 }}
         />
       )}
-      
+
       {/* Low energy warning pulse */}
       {isLowEnergy && (
         <motion.div
@@ -89,7 +99,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onToggle, index = 0 }) => {
           transition={{ duration: 2, repeat: Infinity }}
         />
       )}
-      
+
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3 flex-1">
           {/* Category Icon */}
@@ -99,7 +109,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onToggle, index = 0 }) => {
           )}>
             <Icon className="w-4 h-4" />
           </div>
-          
+
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <div className="flex items-start gap-2">
@@ -135,13 +145,13 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onToggle, index = 0 }) => {
             </p>
           </div>
         </div>
-        
+
         {/* Completion checkbox */}
         <motion.div
           className={cn(
             'w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors',
-            task.completed 
-              ? 'bg-primary border-primary' 
+            task.completed
+              ? 'bg-primary border-primary'
               : 'border-muted-foreground/30 group-hover:border-primary/50'
           )}
           whileTap={{ scale: 0.9 }}
@@ -149,19 +159,19 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onToggle, index = 0 }) => {
           {task.completed && <Check className="w-4 h-4 text-primary-foreground" />}
         </motion.div>
       </div>
-      
+
       {/* Footer with metadata */}
       <div className="flex items-center gap-3 mt-4 pt-3 border-t border-border/50">
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <Clock className="w-3.5 h-3.5" />
           <span>{task.estimated_minutes}m</span>
         </div>
-        
+
         <div className={cn('energy-badge', getEnergyBadgeClass())}>
           <Zap className="w-3 h-3" />
           <span>Energy {task.energy_cost}</span>
         </div>
-        
+
         {isLowEnergy && (
           <span className="text-xs text-amber-600 font-medium ml-auto">
             Low energy warning

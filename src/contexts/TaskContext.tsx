@@ -41,10 +41,10 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Fetch tasks from Firebase
   const fetchTasks = useCallback(async () => {
     if (!user?.id) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const userTasks = await tasksService.getUserTasks(user.id);
       setTasks(userTasks);
@@ -56,49 +56,89 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [user?.id]);
 
-  // Add new task
+  // Add new task with Optimistic UI
   const addTask = useCallback(async (taskData: Omit<UserTask, 'id' | 'created_at' | 'updated_at'>) => {
     if (!user?.id) return;
-    
+
+    // 1. Create Optimistic Task
+    const tempId = `temp-${Date.now()}`;
+    const optimisticTask: UserTask = {
+      ...taskData,
+      id: tempId,
+      user_id: user.id,
+      created_at: new Date(), // Local Display
+      updated_at: new Date(),
+      completed: false // Default
+    } as UserTask;
+
+    // 2. Update State Immediately
+    setTasks(prev => [...prev, optimisticTask]);
+
     try {
+      // 3. API Call
       const newTask = await tasksService.createTask(user.id, taskData);
-      setTasks(prev => [...prev, newTask]);
+
+      // 4. Replace Temp with Real
+      setTasks(prev => prev.map(task =>
+        task.id === tempId ? { ...newTask, created_at: newTask.created_at || new Date() } : task
+      ));
     } catch (err) {
       console.error('Error adding task:', err);
       setError('Failed to add task');
+
+      // 5. Rollback on Failure
+      setTasks(prev => prev.filter(task => task.id !== tempId));
       throw err;
     }
   }, [user?.id]);
 
-  // Update existing task
+  // Update existing task with Optimistic UI
   const updateTask = useCallback(async (id: string, updates: Partial<UserTask>) => {
+    // 1. Snapshot previous state
+    const previousTasks = [...tasks];
+
+    // 2. Optimistic Update
+    setTasks(prev => prev.map(task => task.id === id ? { ...task, ...updates } : task));
+
     try {
-      const updatedTask = await tasksService.updateTask(id, updates);
-      setTasks(prev => prev.map(task => task.id === id ? { ...task, ...updatedTask } : task));
+      // 3. API Call
+      await tasksService.updateTask(id, updates);
     } catch (err) {
       console.error('Error updating task:', err);
       setError('Failed to update task');
+
+      // 4. Rollback
+      setTasks(previousTasks);
       throw err;
     }
-  }, []);
+  }, [tasks]);
 
-  // Delete task
+  // Delete task with Optimistic UI
   const deleteTask = useCallback(async (id: string) => {
+    // 1. Snapshot previous state
+    const previousTasks = [...tasks];
+
+    // 2. Optimistic Update
+    setTasks(prev => prev.filter(task => task.id !== id));
+
     try {
+      // 3. API Call
       await tasksService.deleteTask(id);
-      setTasks(prev => prev.filter(task => task.id !== id));
     } catch (err) {
       console.error('Error deleting task:', err);
       setError('Failed to delete task');
+
+      // 4. Rollback
+      setTasks(previousTasks);
       throw err;
     }
-  }, []);
+  }, [tasks]);
 
   // Toggle task completion
   const toggleTask = useCallback(async (id: string) => {
     const task = tasks.find(t => t.id === id);
     if (!task) return;
-    
+
     try {
       const updatedTask = await updateTask(id, { completed: !task.completed });
       return updatedTask;
@@ -138,7 +178,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Periodic refresh for real-time updates
   useEffect(() => {
     if (!user?.id) return;
-    
+
     const interval = setInterval(fetchTasks, 300000); // Refresh every 5 minutes
     return () => clearInterval(interval);
   }, [user?.id, fetchTasks]);
