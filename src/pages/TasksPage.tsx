@@ -31,8 +31,7 @@ const TasksPage: React.FC = () => {
     energy_cost: 3,
     estimated_minutes: 30,
     priority: 'medium' as 'low' | 'medium' | 'high',
-    category: 'admin' as string | null,
-    due_at: null as string | null
+    category: 'admin' as string | null
   });
 
   // Handle new task creation
@@ -50,8 +49,7 @@ const TasksPage: React.FC = () => {
       energy_cost: 3,
       estimated_minutes: 30,
       priority: 'medium' as 'low' | 'medium' | 'high',
-      category: 'admin' as string | null,
-      due_at: null as string | null
+      category: 'admin' as string | null
     });
 
     try {
@@ -318,20 +316,6 @@ const TasksPage: React.FC = () => {
                 onChange={(e) => setNewTask({ ...newTask, estimated_minutes: parseInt(e.target.value) || 30 })}
                 className="mt-1 bg-white/5 border-white/10"
               />
-            </div>
-
-            <div>
-              <Label htmlFor="task-due">Deadline (Optional)</Label>
-              <Input
-                id="task-due"
-                type="datetime-local"
-                value={newTask.due_at || ''}
-                onChange={(e) => setNewTask({ ...newTask, due_at: e.target.value || null })}
-                className="mt-1 bg-white/5 border-white/10"
-              />
-              <p className="text-[10px] text-muted-foreground mt-1">
-                You'll receive a reminder 30 minutes before this time.
-              </p>
             </div>
           </div>
 

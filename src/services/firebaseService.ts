@@ -59,12 +59,8 @@ export interface UserTask {
   priority: 'low' | 'medium' | 'high';
   category: string | null;
   completed: boolean;
-  status?: 'pending' | 'in_progress' | 'completed';
-  started_at?: any;
-  total_seconds_spent?: number;
   created_at: any;
   updated_at: any;
-  due_at?: any;
 }
 
 export interface UserAnalytics {
@@ -179,8 +175,6 @@ export const tasksService = {
     const newTask = {
       ...taskData,
       user_id: userId,
-      status: 'pending',
-      total_seconds_spent: 0,
       created_at: serverTimestamp(),
       updated_at: serverTimestamp()
     };

@@ -26,44 +26,19 @@ export interface DailyTrackingData {
 export const useDailyTracking = () => {
   const { energyLevel } = useEnergy();
   const { user } = useAuth();
-
-  // Initialize from localStorage if available
-  const [trackingData, setTrackingData] = useState<DailyTrackingData>(() => {
-    const saved = localStorage.getItem(`daysense_tracking_${user?.id || 'guest'}`);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Convert ISO strings back to Date objects
-        return {
-          ...parsed,
-          energyTimeline: parsed.energyTimeline.map((e: any) => ({
-            ...e,
-            timestamp: new Date(e.timestamp)
-          }))
-        };
-      } catch (e) {
-        console.error('Error parsing saved tracking data', e);
-      }
-    }
-    return {
-      energyTimeline: [],
-      completedTasks: [],
-      pendingTasks: [],
-      passiveSignals: {},
-      flowScore: undefined,
-      energyTaskAlignmentScore: undefined,
-      completionEfficiencyScore: undefined,
-      focusConsistencyScore: undefined
-    };
+  const [trackingData, setTrackingData] = useState<DailyTrackingData>({
+    energyTimeline: [],
+    completedTasks: [],
+    pendingTasks: [],
+    passiveSignals: {},
+    flowScore: undefined,
+    energyTaskAlignmentScore: undefined,
+    completionEfficiencyScore: undefined,
+    focusConsistencyScore: undefined
   });
 
   const lastEnergyLevel = useRef<number>(energyLevel);
   const lastUpdateTime = useRef<Date>(new Date());
-
-  // Save to localStorage whenever trackingData changes
-  useEffect(() => {
-    localStorage.setItem(`daysense_tracking_${user?.id || 'guest'}`, JSON.stringify(trackingData));
-  }, [trackingData, user?.id]);
 
   // Track energy level changes throughout the day
   useEffect(() => {
