@@ -1,0 +1,15 @@
+ Volume in drive C is OS
+ Volume Serial Number is D080-083E
+
+ Directory of C:\Users\Saksh\Desktop\final\DaySense-AI\android
+
+30-01-2026  16:23    <DIR>          .
+21-02-2026  16:54    <DIR>          ..
+30-01-2026  15:30    <DIR>          .gradle
+30-01-2026  16:32    <DIR>          .idea
+30-01-2026  16:25    <DIR>          app
+30-01-2026  16:23    <DIR>          build
+30-01-2026  16:23    <DIR>          capacitor-cordova-android-plugins
+30-01-2026  00:55               368 local.properties
+               1 File(s)            368 bytes
+               7 Dir(s)  252,971,823,104 bytes free
