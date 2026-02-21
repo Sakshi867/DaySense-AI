@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,99 +19,90 @@ import AICoachPage from "./pages/AICoachPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
-import { NotificationService } from "@/services/NotificationService";
-
 const queryClient = new QueryClient();
 
-const App = () => {
-  useEffect(() => {
-    // Request notification permissions on app launch
-    NotificationService.requestPermissions();
-  }, []);
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <AuthProvider>
+          <EnergyProvider>
+            <TaskProvider>
+              <FlowScoreProvider>
+                <ReflectionProvider>
+                  <Routes>
+                    {/* Public Route */}
+                    <Route path="/" element={<LandingPage />} />
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <EnergyProvider>
-              <TaskProvider>
-                <FlowScoreProvider>
-                  <ReflectionProvider>
-                    <Routes>
-                      {/* Public Route */}
-                      <Route path="/" element={<LandingPage />} />
+                    {/* Onboarding Route - Protected */}
+                    <Route
+                      path="/onboarding"
+                      element={
+                        <ProtectedRoute>
+                          <OnboardingPage />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                      {/* Onboarding Route - Protected */}
-                      <Route
-                        path="/onboarding"
-                        element={
-                          <ProtectedRoute>
-                            <OnboardingPage />
-                          </ProtectedRoute>
-                        }
-                      />
+                    {/* Protected Dashboard Routes */}
+                    <Route
+                      path="/dashboard"
+                      element={
+                        <ProtectedRoute>
+                          <DashboardPage />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                      {/* Protected Dashboard Routes */}
-                      <Route
-                        path="/dashboard"
-                        element={
-                          <ProtectedRoute>
-                            <DashboardPage />
-                          </ProtectedRoute>
-                        }
-                      />
+                    <Route
+                      path="/dashboard/tasks"
+                      element={
+                        <ProtectedRoute>
+                          <TasksPage />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                      <Route
-                        path="/dashboard/tasks"
-                        element={
-                          <ProtectedRoute>
-                            <TasksPage />
-                          </ProtectedRoute>
-                        }
-                      />
+                    <Route
+                      path="/dashboard/analytics"
+                      element={
+                        <ProtectedRoute>
+                          <AnalyticsPage />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                      <Route
-                        path="/dashboard/analytics"
-                        element={
-                          <ProtectedRoute>
-                            <AnalyticsPage />
-                          </ProtectedRoute>
-                        }
-                      />
+                    <Route
+                      path="/dashboard/coach"
+                      element={
+                        <ProtectedRoute>
+                          <AICoachPage />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                      <Route
-                        path="/dashboard/coach"
-                        element={
-                          <ProtectedRoute>
-                            <AICoachPage />
-                          </ProtectedRoute>
-                        }
-                      />
+                    <Route
+                      path="/dashboard/settings"
+                      element={
+                        <ProtectedRoute>
+                          <SettingsPage />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                      <Route
-                        path="/dashboard/settings"
-                        element={
-                          <ProtectedRoute>
-                            <SettingsPage />
-                          </ProtectedRoute>
-                        }
-                      />
-
-                      {/* Catch-all */}
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </ReflectionProvider>
-                </FlowScoreProvider>
-              </TaskProvider>
-            </EnergyProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  );
-};
+                    {/* Catch-all */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </ReflectionProvider>
+              </FlowScoreProvider>
+            </TaskProvider>
+          </EnergyProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;

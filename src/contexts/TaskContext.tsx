@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { tasksService } from '@/services/firebaseService';
-import { NotificationService } from '@/services/NotificationService';
 
 export interface UserTask {
   id: string;
@@ -13,23 +12,18 @@ export interface UserTask {
   priority: 'low' | 'medium' | 'high';
   category: string | null;
   completed: boolean;
-  status?: 'pending' | 'in_progress' | 'completed';
-  started_at?: Date | any | null;
-  total_seconds_spent?: number;
-  created_at: Date | any;
-  updated_at: Date | any;
-  due_at?: Date | any | null;
+  created_at: Date;
+  updated_at: Date;
 }
 
 interface TaskContextType {
   tasks: UserTask[];
   loading: boolean;
   error: string | null;
-  addTask: (task: Omit<UserTask, 'id' | 'created_at' | 'updated_at' | 'status' | 'total_seconds_spent'>) => Promise<void>;
+  addTask: (task: Omit<UserTask, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   updateTask: (id: string, updates: Partial<UserTask>) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   toggleTask: (id: string) => Promise<void>;
-  startTask: (id: string) => Promise<void>;
   refreshTasks: () => Promise<void>;
   getPendingTasks: () => UserTask[];
   getCompletedTasks: () => UserTask[];
@@ -72,11 +66,9 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       ...taskData,
       id: tempId,
       user_id: user.id,
-      created_at: new Date(),
+      created_at: new Date(), // Local Display
       updated_at: new Date(),
-      completed: false,
-      status: 'pending',
-      total_seconds_spent: 0
+      completed: false // Default
     } as UserTask;
 
     // 2. Update State Immediately
@@ -88,7 +80,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       // 4. Replace Temp with Real
       setTasks(prev => prev.map(task =>
-        task.id === tempId ? { ...newTask, created_at: newTask.created_at || new Date() } as UserTask : task
+        task.id === tempId ? { ...newTask, created_at: newTask.created_at || new Date() } : task
       ));
     } catch (err) {
       console.error('Error adding task:', err);
@@ -147,41 +139,11 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const task = tasks.find(t => t.id === id);
     if (!task) return;
 
-    const isCompleting = !task.completed;
-    const updates: Partial<UserTask> = {
-      completed: isCompleting,
-      status: isCompleting ? 'completed' : 'pending',
-      updated_at: new Date()
-    };
-
-    // If completing an in-progress task, calculate extra time spent
-    if (isCompleting && task.status === 'in_progress' && task.started_at) {
-      const extraSeconds = Math.floor((new Date().getTime() - new Date(task.started_at).getTime()) / 1000);
-      updates.total_seconds_spent = (task.total_seconds_spent || 0) + extraSeconds;
-      updates.started_at = null;
-    }
-
     try {
-      await updateTask(id, updates);
+      const updatedTask = await updateTask(id, { completed: !task.completed });
+      return updatedTask;
     } catch (err) {
       console.error('Error toggling task:', err);
-      throw err;
-    }
-  }, [tasks, updateTask]);
-
-  // Start a task
-  const startTask = useCallback(async (id: string) => {
-    const task = tasks.find(t => t.id === id);
-    if (!task || task.completed) return;
-
-    try {
-      await updateTask(id, {
-        status: 'in_progress',
-        started_at: new Date(),
-        updated_at: new Date()
-      });
-    } catch (err) {
-      console.error('Error starting task:', err);
       throw err;
     }
   }, [tasks, updateTask]);
@@ -213,13 +175,13 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [user?.id, fetchTasks]);
 
-  // Sync notifications on task changes
+  // Periodic refresh for real-time updates
   useEffect(() => {
-    if (tasks.length > 0) {
-      NotificationService.scheduleTaskReminders(tasks);
-      NotificationService.scheduleBatchSummary(tasks);
-    }
-  }, [tasks]);
+    if (!user?.id) return;
+
+    const interval = setInterval(fetchTasks, 300000); // Refresh every 5 minutes
+    return () => clearInterval(interval);
+  }, [user?.id, fetchTasks]);
 
   return (
     <TaskContext.Provider
@@ -231,7 +193,6 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         updateTask,
         deleteTask,
         toggleTask,
-        startTask,
         refreshTasks,
         getPendingTasks,
         getCompletedTasks,

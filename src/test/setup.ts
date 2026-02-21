@@ -1,5 +1,4 @@
 import "@testing-library/jest-dom";
-import "vitest/globals";
 
 Object.defineProperty(window, "matchMedia", {
   writable: true,
@@ -7,10 +6,10 @@ Object.defineProperty(window, "matchMedia", {
     matches: false,
     media: query,
     onchange: null,
-    addListener: () => { },
-    removeListener: () => { },
-    addEventListener: () => { },
-    removeEventListener: () => { },
-    dispatchEvent: () => { },
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => {},
   }),
 });
