@@ -1,3 +1,0 @@
-com.daysense.app.test
-style WhiteBackgroundDialogTheme
-style WhiteBackgroundTheme
